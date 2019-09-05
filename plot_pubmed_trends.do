@@ -19,18 +19,20 @@ if `append' == 1 {
 	global repo "C:\Users\lmostrom\Documents\GitHub\healthcare_trends\"
 
 * First load in the total numbers to be merged later
-	import delimited "../Total_NIH.csv", clear varn(2)
+foreach tot in "total" "totaldisease" {
+	import delimited "../`tot'_NIH.csv", clear varn(2)
 	gen nih = 1
 
 	tempfile tot_temp
 	save `tot_temp', replace
 
-	import delimited "../Total_notNIH.csv", clear varn(2)
+	import delimited "../`tot'_notNIH.csv", clear varn(2)
 	gen nih = 0
 
 	append using `tot_temp'
-	ren count all_mesh
-	save "../pubmed_results_byyear_total.dta", replace
+	ren count `tot'
+	save "../pubmed_results_byyear_`tot'.dta", replace
+}
 
 * Now by disease area
 	local csvs: dir "`wd'" files "*.csv"
@@ -70,27 +72,37 @@ else use "../pubmed_results_byyear_bydisease.dta", clear
 
 if `plot' == 1 {
 *-------------------	
-	bys nih year: egen all_diseases = total(count)
-	gen sh_of_total = count/all_diseases*100
+	bys nih year: egen sum_cats = total(count)
+	gen sh_of_total = count/sum_cats*100
 
-	merge m:1 year nih using "../pubmed_results_byyear_total.dta", nogen keep(1 3) keepus(all_mesh)
+	merge m:1 year nih using "../pubmed_results_byyear_total.dta", nogen keep(1 3)
+	merge m:1 year nih using "../pubmed_results_byyear_totaldisease.dta", nogen keep(1 3)
 
-	keep if inrange(year, 1965, 2018)
+	keep if inrange(year, 1965, 2017)
 
 *** Plot Comparison of Sum of Articles by Disease Area vs. Total Articles on PubMed
 	preserve
 		egen tag_nih_yr = tag(year nih)
 		keep if tag_nih_yr
-		gen frac_covered_by_area = all_diseases/all_mesh
+		gen frac_disease = totaldisease/total
+		gen frac_cat_coverage = sum_cats/totaldisease
 
 		#delimit ;
-		tw (line frac_covered_by_area year if nih == 0, lc(blue))
-		   (line frac_covered_by_area year if nih == 1, lc(red)),
+		tw (line frac_disease year if nih == 0, lc(blue))
+		   (line frac_disease year if nih == 1, lc(red)),
 		 legend(order(1 "Not NIH" 2 "NIH"))
 		 yline(1, lc(gs8)) xline(1980, lp(-) lc(gs8))
-		 yti("Total of Article Counts by Disease Area" "Divided by Total Core Journal Articles");
+		 yti("Fraction of Publications About Disease");
+		graph export "../disease_share_of_pubmed.png", replace as(png) wid(1200) hei(700);
+
+		tw (line frac_cat_coverage year if nih == 0, lc(blue))
+		   (line frac_cat_coverage year if nih == 1, lc(red)),
+		 legend(order(1 "Not NIH" 2 "NIH"))
+		 yline(1, lc(gs8)) xline(1980, lp(-) lc(gs8))
+		 yti("Fraction of Publications About Disease");
+		graph export "../sum_of_disease_cats_div_by_disease_pubs.png", replace as(png) wid(1200) hei(700);
 		#delimit cr
-		graph export "../comparison_sum_by_area_with_total.png", replace as(png) wid(1200) hei(700)
+
 	restore
 
 *** Plot Shares of Non-NIH-Funded Research by Disease Area
