@@ -1,0 +1,101 @@
+PubMed Search Entries:
+
+Total_NIH
+jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Total_notNIH
+jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+TotalDisease_NIH
+("Diseases Category"[Mesh] OR "Psychiatry and Psychology Category"[Mesh]) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+TotalDisease_notNIH
+("Diseases Category"[Mesh] OR "Psychiatry and Psychology Category"[Mesh]) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Cardio-NIH
+("Cardiovascular Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh]) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Cardio-notNIH
+("Cardiovascular Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+ChemInduced-NIH
+("Chemically-Induced Disorders"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+ChemInduced-notNIH
+("Chemically-Induced Disorders"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Digestive-NIH
+("Digestive System Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Digestive-notNIH
+("Digestive System Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Endocrine-NIH
+("Endocrine System Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Female Urogenital Diseases"[Mesh] OR "Male Urogenital Diseases"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Endocrine-notNIH
+("Endocrine System Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Female Urogenital Diseases"[Mesh] OR "Male Urogenital Diseases"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Eye-NIH
+("Eye Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Eye-notNIH
+("Eye Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Female-NIH
+("Female Urogenital Diseases and Pregnancy Complications"[Mesh] NOT ("Neoplasms"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Female-notNIH
+("Female Urogenital Diseases and Pregnancy Complications"[Mesh] NOT ("Neoplasms"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Hemic-NIH
+("Hemic and Lymphatic Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Hemic-notNIH
+("Hemic and Lymphatic Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Immune-NIH
+("Immune System Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Immune-notNIH
+("Immune System Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+InfectiousDiseases_NIH
+("Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh]) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+InfectiousDiseases_notNIH
+("Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh]) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Male-NIH
+("Male Urogenital Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Male-notNIH
+("Male Urogenital Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Muscle-NIH
+("Musculoskeletal Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Muscle-notNIH
+("Musculoskeletal Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Neoplasms-NIH
+("Neoplasms"[Mesh] NOT ("Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Neoplasms-notNIH
+("Neoplasms"[Mesh] NOT ("Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Nervous-NIH
+(("Nervous System Diseases"[Mesh] OR "Neurocognitive Disorders"[Mesh]) NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Nervous-notNIH ** must be rerun
+(("Nervous System Diseases"[Mesh] OR "Neurocognitive Disorders"[Mesh]) NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Nutrition-NIH
+("Nutritional and Metabolic Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Nutrition-notNIH
+("Nutritional and Metabolic Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+ENT-NIH
+(("Otorhinolaryngologic Diseases"[Mesh] OR "Stomatognathic Diseases"[Mesh]) NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+ENT-notNIH
+(("Otorhinolaryngologic Diseases"[Mesh] OR "Stomatognathic Diseases"[Mesh]) NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Respiratory-NIH
+("Respiratory Tract Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Respiratory-notNIH
+("Respiratory Tract Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Skin-NIH
+("Skin and Connective Tissue Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Skin-notNIH
+("Skin and Connective Tissue Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+
+Psych-NIH
+("Psychiatry and Psychology Category"[Mesh] NOT ("Neurocognitive Disorders"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Psych-notNIH
+("Psychiatry and Psychology Category"[Mesh] NOT ("Neurocognitive Disorders"[Mesh] OR "Arbovirus Infections"[Mesh] OR "Malaria"[Mesh] OR "Tuberculosis"[Mesh] OR "Hemorrhagic Fevers, Viral"[Mesh])) AND jsubsetaim[text] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
