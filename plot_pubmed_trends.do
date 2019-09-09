@@ -9,65 +9,7 @@ clear all
 set more off
 pause on
 
-local append 0
 local plot 1
-
-if `append' == 1 {
-*-------------------
-	cap cd "C:\Users\lmostrom\Documents\Amitabh\PubMed_Results_byYr\"
-		local wd: pwd
-	global repo "C:\Users\lmostrom\Documents\GitHub\healthcare_trends\"
-
-* First load in the total numbers to be merged later
-foreach tot in "total" "totaldisease" {
-	import delimited "../`tot'_NIH.csv", clear varn(2)
-	gen nih = 1
-
-	tempfile tot_temp
-	save `tot_temp', replace
-
-	import delimited "../`tot'_notNIH.csv", clear varn(2)
-	gen nih = 0
-
-	append using `tot_temp'
-	ren count `tot'
-	save "../pubmed_results_byyear_`tot'.dta", replace
-}
-
-* Now by disease area
-	local csvs: dir "`wd'" files "*.csv"
-
-	local i = 1
-
-	foreach file in `csvs' {
-		
-		if `i' > 1 preserve
-
-		dis "`file'"
-		import delimited `file', clear varn(2)
-		gen nih = 1 - (substr("`file'", -10, 6) == "notnih")
-
-		local pos_ = strpos("`file'", "_") - 1
-		dis "`file'"
-		dis "`pos_'"
-		gen disease_area = substr("`file'", 1, `pos_')
-
-		tempfile temp
-		save `temp', replace
-
-		if `i' > 1 {
-			restore
-			append using `temp'
-		}
-
-		local ++i
-	}
-
-	save "../pubmed_results_byyear_bydisease.dta", replace
-*-------------------
-}
-*-------------------
-else use "../pubmed_results_byyear_bydisease.dta", clear
 
 
 if `plot' == 1 {
@@ -123,7 +65,8 @@ if `plot' == 1 {
 	   (line sh_of_total year if nih == 0 & disease_area == "nutrition", lc(lime) lp(_))
 	   (line sh_of_total year if nih == 0 & disease_area == "psych", lc(purple) lp(-))
 	   (line sh_of_total year if nih == 0 & disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
-	   (line sh_of_total year if nih == 0 & disease_area == "skin", lc(magenta) lp(_..)),
+	   (line sh_of_total year if nih == 0 & disease_area == "skin", lc(magenta) lp(_..))
+	   (line sh_of_total year if nih == 0 & disease_area == "infectious", lc(eltblue) lp(.)),
 	 legend(order(15 "Psychiatry & Psychology"
 				  1  "Cardiovascular"
 	 			  12 "Cancer"
@@ -140,7 +83,8 @@ if `plot' == 1 {
 	 			  4  "Endocrine"
 	 			  5  "ENT & Mouth"
 	 			  6  "Eye"
-				  2  "Chemically-Induced") c(1) pos(3))
+				  2  "Chemically-Induced"
+				  18 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of Publications (%)") title("Not NIH-Funded");
 
 	 graph export "../pubmed_results_notnih_notwtd_1965-2018.png", replace as(png) wid(1600) hei(700);
@@ -166,7 +110,8 @@ if `plot' == 1 {
 	   (line sh_of_total year if nih == 1 & disease_area == "nutrition", lc(lime) lp(_))
 	   (line sh_of_total year if nih == 1 & disease_area == "psych", lc(purple) lp(-))
 	   (line sh_of_total year if nih == 1 & disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
-	   (line sh_of_total year if nih == 1 & disease_area == "skin", lc(magenta) lp(_..)),
+	   (line sh_of_total year if nih == 1 & disease_area == "skin", lc(magenta) lp(_..))
+	   (line sh_of_total year if nih == 0 & disease_area == "infectious", lc(eltblue) lp(.)),
 	 legend(order(15 "Psychiatry & Psychology"
 				  12 "Cancer"
 	 			  13 "Nervous System & Cognition"
@@ -183,7 +128,8 @@ if `plot' == 1 {
 	 			  8  "Hemic"
 	 			  6  "Eye"
 				  5  "ENT & Mouth"
-	 			  2  "Chemically-Induced") c(1) pos(3))
+	 			  2  "Chemically-Induced"
+	 			  18 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of Publications (%)") title("NIH-Funded");
 
 	 graph export "../pubmed_results_nih_notwtd_1980-2018.png", replace as(png) wid(1600) hei(700);
