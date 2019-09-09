@@ -11,16 +11,48 @@ pause on
 
 local plot 1
 
+*-----------------------------------------------------------
 
+cap cd "C:\Users\lmostrom\Documents\Amitabh\"
+import delimited "PubMed_Search_Results_byDisease.csv", varn(1) clear
+
+split query_name, gen(disease_area) p("_")
+	gen nih = (disease_area2 == "NIH")
+	drop query_name
+	ren pub_count count
+
+preserve
+	ren count total
+	keep if disease_area1 == "Total"
+	*br
+	*pause
+	save "pubmed_results_byyear_total.dta", replace
+restore
+preserve
+	ren count totaldisease
+	keep if disease_area1 == "TotalDisease"
+	*br
+	*pause
+	save "pubmed_results_byyear_totaldisease.dta", replace
+restore
+
+ren disease_area1 disease_area
+keep if !inlist(disease_area, "Total", "TotalDisease")
+replace disease_area = lower(disease_area)
+drop disease_area2
+
+save "pubmed_results_byyear_bydisease.dta", replace
+
+*-------------------------------------------------------------
 if `plot' == 1 {
 *-------------------	
 	bys nih year: egen sum_cats = total(count)
 	gen sh_of_total = count/sum_cats*100
 
-	merge m:1 year nih using "../pubmed_results_byyear_total.dta", nogen keep(1 3)
-	merge m:1 year nih using "../pubmed_results_byyear_totaldisease.dta", nogen keep(1 3)
+	merge m:1 year nih using "pubmed_results_byyear_total.dta", nogen keep(1 3) keepus(total)
+	merge m:1 year nih using "pubmed_results_byyear_totaldisease.dta", nogen keep(1 3) keepus(totaldisease)
 
-	keep if inrange(year, 1965, 2017)
+	keep if inrange(year, 1980, 2018)
 
 *** Plot Comparison of Sum of Articles by Disease Area vs. Total Articles on PubMed
 	preserve
@@ -35,14 +67,14 @@ if `plot' == 1 {
 		 legend(order(1 "Not NIH" 2 "NIH"))
 		 yline(1, lc(gs8)) xline(1980, lp(-) lc(gs8))
 		 yti("Fraction of Publications About Disease");
-		graph export "../disease_share_of_pubmed.png", replace as(png) wid(1200) hei(700);
+		graph export "disease_share_of_pubmed.png", replace as(png) wid(1200) hei(700);
 
 		tw (line frac_cat_coverage year if nih == 0, lc(blue))
 		   (line frac_cat_coverage year if nih == 1, lc(red)),
 		 legend(order(1 "Not NIH" 2 "NIH"))
 		 yline(1, lc(gs8)) xline(1980, lp(-) lc(gs8))
 		 yti("Fraction of Publications About Disease");
-		graph export "../sum_of_disease_cats_div_by_disease_pubs.png", replace as(png) wid(1200) hei(700);
+		graph export "sum_of_disease_cats_div_by_disease_pubs.png", replace as(png) wid(1200) hei(700);
 		#delimit cr
 
 	restore
@@ -87,10 +119,8 @@ if `plot' == 1 {
 				  18 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of Publications (%)") title("Not NIH-Funded");
 
-	 graph export "../pubmed_results_notnih_notwtd_1965-2018.png", replace as(png) wid(1600) hei(700);
+	 graph export "pubmed_results_notnih_notwtd_1965-2018.png", replace as(png) wid(1600) hei(700);
 	 #delimit cr
-
-	keep if inrange(year, 1980, 2018)
 
 *** Plot Shares of NIH-Funded Research by Disease Area
 	#delimit ;
@@ -132,7 +162,7 @@ if `plot' == 1 {
 	 			  18 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of Publications (%)") title("NIH-Funded");
 
-	 graph export "../pubmed_results_nih_notwtd_1980-2018.png", replace as(png) wid(1600) hei(700);
+	 graph export "pubmed_results_nih_notwtd_1980-2018.png", replace as(png) wid(1600) hei(700);
 	 #delimit cr
 *-------------------
 }
