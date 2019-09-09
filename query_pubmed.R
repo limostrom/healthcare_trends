@@ -2,7 +2,8 @@
 library(rvest)
 
 # Define term
-term = 'cardiovascular disease'
+##term = 'cardiovascular disease'
+term = '("Cardiovascular Diseases"[Mesh] NOT ("Neoplasms"[Mesh] OR "Pregnancy Complications"[Mesh] OR "Psychiatry and Psychology Category"[Mesh])) AND jsubsetaim[text] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])'
 
 # Clean term for search. e.g. replace whitespace with '%20' for web search
 term_clean = URLencode(term)
