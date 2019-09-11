@@ -27,11 +27,20 @@ api_parse = function(query){
 }
 
 ## --------------------------------------------------------------------
+start_year = 2005
 
-years = as.character(1980:2018)
+# set to econ or diseases:
+group_term = "diseases"
+
+years = as.character(start_year:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
 
-queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms.txt')
+infile = paste0('GitHub/healthcare_trends/search_terms_',
+			group_term,
+			'_',
+			as.character(start_year),
+			'.txt')
+queries_sub = read_tsv(file = infile)
 queries = rep(queries_sub$Query, each=length(year_queries))
 query_names = rep(queries_sub$Query_Name, each=length(year_queries))
 
@@ -50,9 +59,17 @@ data = data.frame(
   pub_count = pub_counts
 )
 
-write_csv(data, path = 'Amitabh/PubMed_Search_Results_byDisease.csv')
-
-
+if (group_term == "diseases") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_byDisease_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "econ") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_MedvsEcon_from',
+				as.character(start_year),
+				'.csv')
+}
+write_csv(data, path = outfile)
 
 
 
