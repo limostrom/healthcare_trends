@@ -24,7 +24,7 @@ pull_pmids = function(query){
   N = xml %>%
     xml_node('Count') %>%
     xml_double()
-
+print(N)
   # Return list of article IDs to scrape later
   pmid_list = xml %>% 
     xml_node('IdList')
@@ -33,7 +33,7 @@ pull_pmids = function(query){
   Sys.sleep(0.2)
 
   i = 5000
-  while (i < 5000) {
+  while (i < N) {
     # Form URL using the term
     url = paste0('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmax=5000&retstart=',
                 i,
@@ -64,19 +64,27 @@ pull_pmids = function(query){
 
 pull_affs = function(id) {
   
+# test example: id = 2752138
+
 # Form URL using the term
   url = paste0('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=',
 			id,
 		   '&retmode=xml')
-  
+
   # Query PubMed and save result
-  xml = read_xml(url)
-  
-  # Store total number of papers so you know when to stop looping
-  affil = xml %>%
-    xml_node('AffiliationInfo')
-  #affil = str_extract_all(affil,"\\(?[0-9]+\\)?")[[1]]
-  #affil = Filter(length(affil) == 5, affil)
+  possibleError = tryCatch(xml = read_xml(url), error=function(e) e)
+
+  if (inherits(possibleError, "error")) {
+	print(paste0("Error Encountered on PMID ", id))
+	affil = ""
+  }
+  else {
+  	# Store author affiliation full string
+  	affil = xml %>%
+  	  xml_node('AffiliationInfo')
+  	affil = as.character(affil)
+  	#affil = str_extract_all(affil,"\\(?[0-9]{5}\\)?")[[1]] - For pulling zipcodes only (but not all have them, some just have City, State)
+  }
 
   Sys.sleep(0.2)
 
@@ -87,7 +95,7 @@ years = as.character(1980:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
 
 #list of queries to run year by year
-queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_for_pmids.txt')
+queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_for_pmids_QA.txt')
 queries = rep(queries_sub$Query, each=length(year_queries))
 query_names = rep(queries_sub$Query_Name, each=length(year_queries))
 
@@ -95,21 +103,20 @@ queries = paste0(year_queries, queries)
 query_names = paste0(query_names, years)
 
 #Run through scraping function to pull out PMIDs
-PMIDs = sapply(X = queries, FUN = pull_pmids) %>%
+PMIDs = sapply(X = queries[1:2], FUN = pull_pmids) %>%
 	unname()
-colnames(PMIDs) = query_names
+for (i in 1:2) {
+	outfile = paste0('Amitabh/PMIDs/PMIDs_QA_',
+				query_names[i],
+				'.csv')
+	subset = data.frame(PMIDs[i], rep(query_names[i], length(PMIDs[i])))
+	write_csv(subset, outfile)
+}
 
-#Must be data frame to write as CSV
-PMIDs = as.data.frame(PMIDs)
-write_csv(PMIDs, path = 'Amitabh/PMIDs_subset.csv')
 
-#Must be vector to run through scraping function again
-PMIDs = matrix(PMIDs) %>%
-	unlist()
+AuthAffs = sapply(X = unlist(PMIDs), FUN = pull_affs)
+affs_list = data.frame(pmid = PMIDs, affls = AuthAffs)
 
-AuthAffs = sapply(X = PMIDs, FUN = pull_affs)
-affs_list = data.frame(pmid = PMIDs, affl = AuthAffs)
-
-write_csv(affs_list, path = 'Amitabh/AuthAffs_subset.csv')
+write_csv(affs_list, path = 'Amitabh/AuthAffs_QA.csv')
 
 
