@@ -1,0 +1,5 @@
+Query_Name	Query
+LifeSci_NIH	AND "Diseases Category"[Mesh] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+LifeSci_notNIH	AND "Diseases Category"[Mesh] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+NonLife_NIH	NOT "Diseases Category"[Mesh] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+NonLife_notNIH	NOT "Diseases Category"[Mesh] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
