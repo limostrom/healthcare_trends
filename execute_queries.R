@@ -27,10 +27,10 @@ api_parse = function(query){
 }
 
 ## --------------------------------------------------------------------
-start_year = 2005
+start_year = 1980
 
 # set to econ or diseases:
-group_term = "diseases"
+group_term = "health_econ_and_policy"
 
 years = as.character(start_year:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
@@ -66,6 +66,11 @@ if (group_term == "diseases") {
 }
 if (group_term == "econ") {
 	outfile = paste0('Amitabh/PubMed_Search_Results_MedvsEcon_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "health_econ_and_policy") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_HealthEconPolicy_from',
 				as.character(start_year),
 				'.csv')
 }
