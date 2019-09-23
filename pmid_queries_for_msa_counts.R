@@ -69,7 +69,7 @@ pull_affs = function(id) {
 # Form URL using the term
   url = paste0('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=',
 			id,
-		   '&retmode=xml')
+		   '&retmode=xml&api_key=ae06e6619c472ede6b6d4ac4b5eadecdb209')
 
   # Query PubMed and save result
   #xml = read_xml(curl(url, handle = curl::new_handle("useragent" = "Mozilla/5.0")))
@@ -80,19 +80,19 @@ pull_affs = function(id) {
   	affil = as.character(affil)
   	#affil = str_extract_all(affil,"\\(?[0-9]{5}\\)?")[[1]]
 
-  Sys.sleep(0.35)
+  Sys.sleep(runif(1,0.2,0.4))
 
   return(affil)
 }
 ## --------------------------------------------------------------------
 # Author affiliations only reliably show up from 1988 on
-years = as.character(1988:2018)
+years = as.character(1980:1987)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
 
 #list of queries to run year by year
 queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_for_pmids_QA.txt')
-queries = rep(queries_sub$Query[1], each=length(year_queries))
-query_names = rep(queries_sub$Query_Name[1], each=length(year_queries))
+queries = rep(queries_sub$Query, each=length(year_queries))
+query_names = rep(queries_sub$Query_Name, each=length(year_queries))
 
 queries = paste0(year_queries, queries)
 query_names = paste0(query_names, years)
@@ -109,8 +109,8 @@ for (i in 1:length(query_names)) {
 }
 
 AuthAffs = sapply(X = unlist(PMIDs), FUN = pull_affs)
-affs_list = data.frame(pmid = PMIDs, affls = AuthAffs)
+affs_list = data.frame(pmid = unlist(PMIDs), affls = AuthAffs)
 
-write_csv(affs_list, path = 'Amitabh/AuthAffs_QA.csv')
+write_csv(affs_list, path = 'Amitabh/AuthAffs_QA_1980_1987.csv')
 
 
