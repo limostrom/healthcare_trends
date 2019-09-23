@@ -10,9 +10,10 @@ set more off
 pause on
 
 local diseases_1980 0
-local diseases_2005 1
+local diseases_2005 0
 local econ_1980 0
 local econ_2005 0
+local health_econ_1980 1
 
 *-----------------------------------------------------------
 if `diseases_1980' == 1 {
@@ -450,6 +451,57 @@ save "pubmed_results_byyear_byfield_2005.dta", replace
 		 yti("Publications from Top 20 Econ Journals in PubMed");
 		graph export "econ_in_pubmed_2005-2018.png", replace as(png) wid(1200) hei(700);
 	#delimit cr
+*-------------------
+}
+*-------------------
+
+*-----------------------------------------------------------
+if `health_econ_1980' == 1 {
+*-------------------	
+cap cd "C:\Users\lmostrom\Documents\Amitabh\"
+import delimited "PubMed_Search_Results_HealthEconPolicy_from1980.csv", varn(1) clear
+
+split query_name, gen(field) p("_")
+	gen nih = (field2 == "NIH")
+	drop query_name
+	ren pub_count count
+
+ren field1 field
+replace field = lower(field)
+drop field2
+
+save "pubmed_results_byyear_HealthEconPolicy_1980.dta", replace
+
+
+*** Plot Comparison of Econ Papers funded by NIH vs. Not Funded by NIH
+foreach field in "hceo" "econsub" "legsub" {
+	forval nihfund = 0/1 {
+		if `nihfund' == 0 {
+			local subti "Not NIH Funded"
+			local col "blue"
+		}
+		if `nihfund' == 1 {
+			local subti "NIH Funded"
+			local col "red"
+		}
+
+		if "`field'" == "hceo" local ti "Health Care Economics and Organizations Papers"
+		if "`field'" == "econsub" local ti "Papers with an Economics MeSH Subheading"
+		if "`field'" == "legsub" local ti "Papers with a Legislation MeSH Subheading"
+		
+
+		#delimit ;
+			tw (line count year if nih == `nihfund' & field == "`field'", lc(`col') lp(l))
+			   (line count year if nih == `nihfund' & field == "`field'diseases", lc(`col') lp(-)),
+			 title("`ti'") subtitle("`subti'")
+			 legend(order(1 "Total Papers" 2 "Papers about Diseases"))
+			 xline(2008, lp(-) lc(gs8)) yti("");
+			graph export "`field'_nih`nihfund'_in_pubmed_1980-2018.png", replace as(png) wid(1200) hei(700);
+		#delimit cr
+	}
+}
+
+
 *-------------------
 }
 *-------------------
