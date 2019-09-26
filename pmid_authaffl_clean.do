@@ -541,8 +541,10 @@ save affls_master.dta, replace
 *================================================================================
 * (3) Merge with CBSA Codes
 *================================================================================
+use affls_master.dta, clear
+
 gen has_affl = affl != ""
-gen usa = has_affl & country == "USA"
+gen usa = has_affl & inlist(country, "", "USA")
 
 preserve
 	#delimit ;
@@ -552,7 +554,7 @@ preserve
 			 (count) Final = cbsacode, by(year);
 	#delimit cr
 	sort year
-	export delimited sample_byYr_9-20-2019.csv, replace
+	export delimited sample_byYr_9-25-2019.csv, replace
 restore
 
 preserve
@@ -565,5 +567,111 @@ preserve
 	 yti("Share of US Publications with Found MSA Code (%)")
 	 xti("Year");
 	#delimit cr
-	graph export coverage_byLifeNonLife_9-20-19.png, as(png) replace wid(1200) hei(700)
+	graph export coverage_byLifeNonLife_9-25-19.png, as(png) replace wid(1200) hei(700)
 restore
+
+gen MSAgroup = "BOS" if cbsacode == 14460
+	replace MSAgroup = "SF & SJ" if inlist(cbsacode, 41860, 41940)
+	replace MSAgroup = "CHI" if cbsacode == 16980
+	replace MSAgroup = "NY" if cbsacode == 35620
+	replace MSAgroup = "DC" if inlist(cbsacode, 47900, 12580)
+	replace MSAgroup = "LA" if cbsacode == 31080
+	replace MSAgroup = "SD" if cbsacode == 41740
+	replace MSAgroup = "NHAV" if cbsacode == 35300
+	replace MSAgroup = "SEA" if cbsacode == 42660
+	replace MSAgroup = "DUR/CH" if cbsacode == 20500
+
+/* Silenced because using list of top MSAs from Pharma/Patents
+	replace MSAgroup = "PHL" if cbsacode == 37980
+	replace MSAgroup = "MIA" if cbsacode == 33100
+*/	
+	replace MSAgroup = "Other" if cbsacode != . & MSAgroup == ""
+
+
+
+preserve
+	collapse (count) pmid, by(MSAgroup year nih lifesci)
+	forval nih01 = 0/1 {
+		forval life01 = 0/1 {
+			if `nih01' == 1 local ti "NIH-Funded"
+			if `nih01' == 0 local ti "Non-NIH-Funded"
+
+			if `life01' == 1 local ti "`ti' Life Science Research"
+			if `life01' == 0 local ti "`ti' Non-Life Science Research"
+
+			#delimit ;
+			graph bar (asis) pmid if inlist(year, 1990, 2000, 2010) & !inlist(MSAgroup, "", "Other") 
+					& lifesci == `life01' & nih == `nih01', 
+				over(year, gap(5)) asyvars bar(1, col(green)) bar(2, col(eltblue)) bar(3, col(gold))
+				over(MSAgroup, sort(msa_order)) yti("No. of Publications") legend(r(1)) title("`ti'");
+			graph export "pubs_byYr_byMSA_life`life01'_nih`nih01'.png", replace as(png) wid(1600) hei(700);
+			#delimit cr
+		}
+	}
+	collapse (sum) pmid, by(MSAgroup year lifesci)
+	forval life01 = 0/1 {
+		if `life01' == 1 local ti "Total Life Science Research"
+		if `life01' == 0 local ti "Total Non-Life Science Research"
+
+		#delimit ;
+		graph bar (asis) pmid if inlist(year, 1990, 2000, 2010) & !inlist(MSAgroup, "", "Other") 
+				& lifesci == `life01', 
+			over(year, gap(5)) asyvars bar(1, col(green)) bar(2, col(eltblue)) bar(3, col(gold))
+			over(MSAgroup, sort(msa_order)) yti("No. of Publications") legend(r(1)) title("`ti'");
+		graph export "pubs_byYr_byMSA_life`life01'.png", replace as(png) wid(1600) hei(700);
+		#delimit cr
+	}
+restore
+
+
+gen match_group = "TopMSA" if !inlist(MSAgroup, "", "Other")
+replace match_group = "OtherMSA" if MSAgroup == "Other"
+replace match_group = "NotMatched" if has_affl == 1 & cbsacode == . & inlist(country, "", "USA")
+
+preserve
+	collapse (count) pubs = pmid, by(match_group year lifesci nih)
+	keep if match_group != ""
+
+	reshape wide pubs, i(year lifesci nih) j(match_group) string 
+	gen pubsOtherMSA_adj = pubsOtherMSA + pubsTopMSA
+	gen pubsNotMatched_adj = pubsNotMatched + pubsOtherMSA + pubsTopMSA
+
+	forval nih01 = 0/1 {
+		forval life01 = 0/1 {
+			if `nih01' == 1 local ti "NIH-Funded"
+			if `nih01' == 0 local ti "Non-NIH-Funded"
+
+			if `life01' == 1 local ti "`ti' Life Science Research"
+			if `life01' == 0 local ti "`ti' Non-Life Science Research"
+
+			#delimit ;
+			tw (area pubsNotMatched_adj year if lifesci == `life01' & nih == `nih01', col(gs8))
+			   (area pubsOtherMSA_adj year if lifesci == `life01' & nih == `nih01', col(navy))
+			   (area pubsTopMSA year if lifesci == `life01' & nih == `nih01', col(cranberry)),
+			 legend(order(1 "Have Affiliations but Not Matched to MSA Codes"
+			 			  2 "Matched to MSA Codes Other than Top 10"
+			 			  3 "Matched to BOS, CHI, DC, DUR/CH, LA, NHAV, NY, SD, SEA, or SF/SJ")
+			 		c(1))
+			 title("`ti'") yti("No. of Publications");
+			graph export "pubs_ts_byMatched_life`life01'_nih`nih01'.png", replace as(png) wid(1600) hei(700);
+			#delimit cr
+		}
+	}
+
+	collapse (sum) pubs*, by(year lifesci)
+	forval life01 = 0/1 {
+		if `life01' == 1 local ti "Total Life Science Research"
+		if `life01' == 0 local ti "Total Non-Life Science Research"
+
+		#delimit ;
+		tw (area pubsNotMatched_adj year if lifesci == `life01', col(gs8))
+		   (area pubsOtherMSA_adj year if lifesci == `life01', col(navy))
+		   (area pubsTopMSA year if lifesci == `life01', col(cranberry)),
+		 legend(order(1 "Have Affiliations but Not Matched to MSA Codes"
+		 			  2 "Matched to MSA Codes Other than Top 10"
+		 			  3 "Matched to BOS, CHI, DC, DUR/CH, LA, NHAV, NY, SD, SEA, or SF/SJ")
+		 		c(1))
+		 title("`ti'") yti("No. of Publications");
+		graph export "pubs_ts_byMatched_life`life01'.png", replace as(png) wid(1600) hei(700);
+		#delimit cr
+	}
