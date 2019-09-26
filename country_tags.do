@@ -3,7 +3,7 @@ Extract other country names
 
 */
 #delimit ;
-local countries zzz "Afghanistan" "Argentina" "Aruba" "Australia" "Melbourne" "Sydney" "Perth"
+local countries zzz "Afghanistan" "Argentina" "Armenia" "Aruba" "Australia" "Melbourne" "Sydney" "Perth"
 			"Austria" "Bangladesh" "Belgium" "Brussels" "Botswana" "Brazil"
 			"Bulgaria" "Burkina Faso" "Cameroon" "Toronto" "Montreal" "Ontario" "Vancouver" "Canada"
 			"Chile" "Cambodia" "Beijing" "Shanghai" "China" "Colombia" "Congo" "Costa Rica"
@@ -12,19 +12,19 @@ local countries zzz "Afghanistan" "Argentina" "Aruba" "Australia" "Melbourne" "S
 			"France" "New Caledonia" "Paris" "Germany" "Berlin" "FRG" "FGR" "Heidelberg"
 			"Gambia" "Gabon" "Ghana" "Greece" "Guatemala" "Haiti" "Honduras" 
 			"Hong Kong" "Hungary" "Iceland" "India" "New Delhi" "Indonesia" "Iran" 
-			"Iceland" "Ireland" "Dublin" "Israel" "Milan" "Rome" "Italy" "Italia"
-			"Jamaica" "Japan" "Tokyo" "Jordan" "Nairobi" "Kenya" "Korea" "Seoul"
-			"Lao PDR" "Latvia" "Lebanon" "Lithuania" "Madagascar" "Malawi" "Malaysia"
-			"Mali" "Mexico" "Morocco" "Mozambique" "Myanmar" "Nepal" "Nicaragua" "Nigeria"
+			"Iceland" "Ireland" "Dublin" "Israel" "Iraq" "Jerusalem" "Milan" "Rome" "Italy" "Italia"
+			"Jamaica" "Japan" "Tokyo" "Jordan" "Nairobi" "Kazakhstan" "Kenya" "Korea" "Seoul"
+			"Lao PDR" "Latvia" "Lebanon" "Libya" "Lithuania" "Luxembourg" "Madagascar" "Malawi" "Malaysia"
+			"Mali" "Mexico" "Guanajuato" "Morocco" "Mozambique" "Myanmar" "Nepal" "Nicaragua" "Nigeria"
 			"Amsterdam" "Netherland" "New Zealand" "Oslo" "Norway" "Oman" "Oxford" "Pakistan"
-			"Papua New Guinea" "Guinea" /*i think diff from PNG*/ "Panama" "Peru" "Philippines"
+			"Papua New Guinea" "Guinea" "Panama" "Peru" "Philippines"
 			"Poland" "Portugal" "Qatar" "Romania" "Moscow" "Russia" "Rwanda" "Saudi Arabia"
 			"Scotland" "Edinburgh" "Senegal" "Serbia" "Sierra Leone" "Singapore" "Slovenia"
-			"Slovakia" "Spain" "South Africa" "Sri Lanka" "Sudan"
+			"Slovakia" "Spain" "Barcelona" "South Africa" "Sri Lanka" "Sudan"
 			"Sweden" "Stockholm" "Swedish" "Geneva" "Switzerland" "Switerland"
 			"Syria" "Taiwan" "Tanzania" "Thailand" "Togo" "Trinidad and Tobago"
 			"Tunisia" "Turkey" "Uganda" "United Arab Emirates" "Ukraine" "Uruguay"
-			"UK" "London" "U.K." "Surrey" "Glasgow" "United Kingdom" "Venezuela"
+			"UK" "London" "U.K." "Surrey" "Glasgow" "United Kingdom" "Uzbekistan" "Venezuela"
 			"Viet Nam" "Vietnam" "West Indies" "Wales" "Yemen" "Zaire" "Zambia" "Zimbabwe";
 #delimit cr
 
@@ -50,8 +50,11 @@ foreach c of local countries {
 	replace country = "Italy" if inlist(country, "Italy", "Milan", "Italia", "Rome")
 	replace country = "India" if inlist(country, "India", "New Delhi")
 	replace country = "Ireland" if inlist(country, "Ireland", "Dublin")
+	replace country = "Israel" if inlist(country, "Israel", "Jerusalem")
 	replace country = "Japan" if inlist(country, "Japan", "Tokyo")
 	replace country = "Kenya" if inlist(country, "Kenya", "Nairobi")
+	replace country = "Mexico" if inlist(country, "Mexico", "Guanajuato")
+	replace country = "Spain" if inlist(country, "Spain", "Barcelona")
 	replace country = "South Korea" if inlist(country, "Korea", "Seoul")
 	replace country = "Netherlands" if inlist(country, "Netherland", "Amsterdam")
 	replace country = "Norway" if inlist(country, "Norway", "Oslo")
