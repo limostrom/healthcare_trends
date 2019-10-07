@@ -4,15 +4,19 @@ Cleaning PMID author affiliations
 pmid_authaffl_clean.do
 
 */
+pause on
 
 local pmids_append 0
 local pmids_append_2005 0
 local affls_append 0
-local affls_clean 0
-local full_save 0
+local affls_clean 1
+local full_save 1
 local full_save_2005 0
-local plots 0
-local plots_2005 1
+
+local plots 1
+local plots_2005 0
+	local old_MSAs 0
+local non_us 1
 
 
 
@@ -150,11 +154,28 @@ include $repo/clean_msa_codes2.do
 
 use "full_auth_affls.dta", clear
 	
-	replace affl = "" if affl_raw == "NA"
+	replace affl = "" if affl_raw == "NA" ///
+					| substr(affl_raw, 1, 3) == " . " ///
+					| substr(affl_raw, 1, 21) == "Nature Communications" ///
+					| substr(affl_raw, 1, 15) == " Nature Reviews" ///
+					| substr(affl_raw, 1, 8) == " Nature," ///
+					| substr(affl_raw, 1, 5) == "Cell." ///
+					| substr(affl_raw, 1, 10) == "The Lancet" ///
+					| affl == "["
 
 	*First check country
 	gen country = ""
 	include "$repo/country_tags.do"
+
+		replace country = "United Kingdom" if strpos(affl, "Ackton Hospital") > 0 | ///
+											strpos(affl, "Addenbrooke's Hospital") > 0 | ///
+											strpos(affl, "Brunel University") > 0 | ///
+											strpos(affl, "Aberdeen Royal Infirmary") > 0 | ///
+											strpos(affl, "University of Oxford") > 0 | ///
+						(strpos(affl, "Ipswich Hospital") > 0 & strpos(affl, "Suffolk") > 0)
+		replace country = "Canada" if strpos(affl, "Hamilton") > 0 & ///
+								(strpos(affl, "ON") + strpos(affl, "Ont.") > 0)
+		replace country = "France" if strpos(affl, "Institut de Chimie") > 0
 
 		*Common points of confusion
 		replace country = "USA" if strpos(affl, "Beth Israel") > 0 & country == "Israel"
@@ -162,6 +183,7 @@ use "full_auth_affls.dta", clear
 		replace country = "USA" if strpos(affl, "New England") > 0 & country == "United Kingdom" & ///
 					strpos(affl, "University of New England") == 0
 			replace country = "Australia" if strpos(affl, "University of New England") > 0
+		replace country = "USA" if strpos(affl, "Dartmouth") > 0 & country == "Lebanon"
 
 	*Then find zipcodes
 	gen zip = regexs(0) if regexm(affl, "[0-9][0-9][0-9][0-9][0-9]") & inlist(country, "USA", "")
@@ -192,10 +214,11 @@ use "full_auth_affls.dta", clear
 	*Then search strings for city names
 	gen city = ""
 	foreach c of local city_names {
-		dis "`c'"
-		replace city = "`c'" if strpos(affl, "`c'") > 0 & city == "" & inlist(country, "USA", "")
-		replace city = "`c'" if strpos(affl, "`c'") > 0 & city != "" & ///
+		if "`c'" != "California" {
+			replace city = "`c'" if strpos(affl, "`c'") > 0 & city == "" & inlist(country, "USA", "")
+			replace city = "`c'" if strpos(affl, "`c'") > 0 & city != "" & ///
 										strpos(affl, "`c'") > strpos(affl, city) & inlist(country, "USA", "")
+		}
 			/* take city that appears later in the string because that's a more likely place for a city;
 				"city names" found earlier more likely to be names of institutions or streets */
 	}
@@ -350,7 +373,9 @@ use "full_auth_affls.dta", clear
 		replace city = "San Francisco" if pmid == 30575451
 			replace state_abbr = "CA" if pmid == 30575451
 	replace state_abbr = "ME" if city == "Bangor" & strpos(affl, "Joseph Hospital") > 0
+	replace state_abbr = "LA" if inlist(city, "Baton Rouge", "New Orleans")
 	replace state_abbr = "CA" if city == "Berkeley" & inlist(state_abbr, "", "MS", "ND")
+	replace state_abbr = "MD" if city == "Bethesda"
 	replace state_abbr = "PA" if city == "Bethlehem" & strpos(affl, "Lehigh") > 0
 	replace state_abbr = "AL" if city == "Birmingham" & ///
 				(country == "USA" | strpos(affl, "Birmingham, Ala") > 0 )
@@ -458,13 +483,17 @@ use "full_auth_affls.dta", clear
 	replace state_abbr = "VA" if city == "Richmond" & substr(zip,1,2) == "23"
 	replace state_abbr = "CA" if city == "Richmond" & substr(zip,1,2) == "94"
 	replace state_abbr = "MN" if city == "Rochester" & (substr(zip,1,2) == "55" | strpos(affl, "Mayo Clinic") > 0)
-	replace state_abbr = "NY" if city == "Rochester" & (substr(zip,1,2) == "14" | strpos(affl, "University of Rochester") > 0)
+	replace state_abbr = "NY" if city == "Rochester" & (substr(zip,1,2) == "14" | ///
+											strpos(affl, "University of Rochester") > 0)
 	replace city = "Hamilton" if city == "Rocky Mount" & strpos(affl, "Rocky Mountain Lab") > 0
 		replace state_abbr = "MT" if city == "Rocky Mount" & strpos(affl, "Rocky Mountain Lab") > 0
-	replace state_abbr = "CA" if city == "Sacramento"
+	replace city = "Sacramento" if strpos(affl, "Davis") > 0 & city == "" & state_abbr == "" ///
+			& inlist(country, "", "USA")
 	replace state_abbr = "UT" if city == "Salt Lake City"
 	replace state_abbr = "TX" if city == "San Antonio"
-	replace state_abbr = "CA" if inlist(city, "San Diego", "San Francisco", "San Jose", "Santa Barbara", "Santa Cruz")
+	replace state_abbr = "CA" if inlist(city, "San Diego", "San Francisco", "San Jose", "Santa Barbara", ///
+										"Santa Cruz", "Santa Monica", "Sacramento", "Irvine")
+		replace state_abbr = "CA" if city == "Orange" & state_abbr == ""
 	replace state_abbr = "WA" if inlist(city, "Seattle", "Spokane")
 	replace city = "Stanford" if city == "Sherman" & state_abbr == "CA"
 	replace state_abbr = "IL" if city == "Springfield" & substr(zip,1,2) == "62"
@@ -489,8 +518,13 @@ use "full_auth_affls.dta", clear
 		replace city = "Seattle" if city == "Washington" & state_abbr == "WA" & strpos(affl, "Seattle") > 0
 	replace state_abbr = "DE" if city == "Wilmington" & state_abbr == "CO" & substr(zip, 1, 3) == "198"
 	replace state_abbr = "MA" if city == "Worcester" & country == "USA"
-
+	replace state_abbr = "CA" if strpos(affl, "Burnham Institute") > 0 & city == "" & state_abbr == ""
+		replace city = "San Diego" if strpos(affl, "Burnham Institute") > 0 & city == "" & state_abbr == ""
+	replace state_abbr = "CA" if strpos(affl, "Caltech") > 0 & city == "" & state_abbr == ""
+		replace city = "Pasadena" if strpos(affl, "Caltech") > 0 & city == "" & state_abbr == ""
 	replace state_abbr = "OH" if city == "Youngstown"
+	replace city = "Hanover" if city == "" & strpos(affl, "Dartmouth") > 0 & inlist(state_abbr, "", "NH")
+		replace state_abbr = "NH" if strpos(affl, "Dartmouth") > 0 & city == "Hanover" & state_abbr == ""
 
 	replace city = "Washington" if state_abbr == "DC" & city == ""
 	
@@ -530,8 +564,11 @@ use "full_auth_affls.dta", clear
 	replace city = "Providence" if city == "" & inlist(state_abbr, "", "RI") & ///
 			strpos(affl, "Brown University") > 0
 			replace state_abbr = "RI" if city == "Providence" & state_abbr == ""
+	replace city = "New York" if city == "" & inlist(state_abbr, "", "NY") & ///
+			strpos(affl, "Mount Sinai") > 0
+			replace state_abbr = "NY" if city == "New York" & state_abbr == ""
 	replace city = "Stanford" if strpos(affl, "Stanford") > 0 & city == "" & inlist(state_abbr, "", "CA")
-		replace state_abbr = "CA" if city == "Stanford" & state_abbr == "CA"
+		replace state_abbr = "CA" if city == "Stanford" & state_abbr == ""
 	replace city = "Santa Clara" if city == "Stanford" & state_abbr == "CA"
 	replace city = "New York" if (state_abbr == "NY" | state_name == "New York") & ///
 			city == "" & strpos(affl, "Brooklyn") + strpos(affl, "Bronx") + strpos(affl, "Queens") > 0
@@ -541,7 +578,8 @@ use "full_auth_affls.dta", clear
 	replace country = "Canada" if city == "Kingston" & country == "" & state_abbr == ""
 		replace country = "Canada" if city == "Victoria" & strpos(affl, "East Geelong") > 0
 	replace country = "Peru" if city == "Lima"
-	replace country = "United Kingdom" if inlist(city, "Bristol", "Cambridge", "Manchester", "Norwich", "Salisbury", "Warwick")  & ///
+	replace country = "United Kingdom" if inlist(city, "Bristol", "Cambridge", "Manchester", ///
+												"Norwich", "Salisbury", "Warwick", "Oxford")  & ///
 				state_name == "" & state_abbr == "" & country == ""
 		replace country = "United Kingdom" if city == "Victoria" & strpos(affl, "Victoria Infirmary") > 0
 
@@ -551,7 +589,7 @@ use "full_auth_affls.dta", clear
 	replace state_abbr = "" if state_name != "" & state_abbr != "" & ///
 								strpos(affl, state_name) > strpos(affl, state_abbr)
 	replace zip = "" if !inlist(country, "", "USA") // 5-digit address probably
-	replace country = "USA" if (strpos(affl, "USA") > 0 | state_name != "" | state_abbr != "" | zip != "") ///
+	replace country = "USA" if (strpos(affl, "USA") > 0 | state_name != "" | state_abbr != "") ///
 						& country == ""
 
 	merge m:1 state_name using "state_names_abbrs.dta", nogen keep(1 3) keepus(state_abbr) update
@@ -560,6 +598,11 @@ use "full_auth_affls.dta", clear
 
 	merge m:1 city state_abbr using "MSA_city_state_clean.dta", keep(1 3) keepus(cbsacode)
 	destring cbsacode, replace
+	replace cbsacode = . if country != "USA"
+
+	bys zip: egen alt_cbsacode = mode(cbsacode)
+		replace cbsacode = alt_cbsacode if (city == "" | state_abbr == "" | country == "USA") ///
+									& zip != ""
 
 save clean_auth_affls.dta, replace
 
@@ -608,7 +651,7 @@ preserve
 			 (count) Final = cbsacode, by(year);
 	#delimit cr
 	sort year
-	export delimited sample_byYr_9-25-2019.csv, replace
+	export delimited sample_byYr_10-3-2019.csv, replace
 restore
 
 preserve
@@ -621,7 +664,7 @@ preserve
 	 yti("Share of US Publications with Found MSA Code (%)")
 	 xti("Year");
 	#delimit cr
-	graph export coverage_byLifeNonLife_9-25-19.png, as(png) replace wid(1200) hei(700)
+	graph export coverage_byLifeNonLife_10-3-19.png, as(png) replace wid(1200) hei(700)
 restore
 
 gen MSAgroup = "BOS" if cbsacode == 14460
@@ -631,14 +674,18 @@ gen MSAgroup = "BOS" if cbsacode == 14460
 	replace MSAgroup = "DC" if inlist(cbsacode, 47900, 12580)
 	replace MSAgroup = "LA" if cbsacode == 31080
 	replace MSAgroup = "SD" if cbsacode == 41740
+
+if `old_MSAs' == 0 {
 	replace MSAgroup = "NHAV" if cbsacode == 35300
 	replace MSAgroup = "SEA" if cbsacode == 42660
 	replace MSAgroup = "DUR/CH" if cbsacode == 20500
-
-/* Silenced because using list of top MSAs from Pharma/Patents
+	local folder ""
+}
+else {
 	replace MSAgroup = "PHL" if cbsacode == 37980
 	replace MSAgroup = "MIA" if cbsacode == 33100
-*/	
+	local folder "Plots - old Top MSAs/"
+}
 	replace MSAgroup = "Other" if cbsacode != . & MSAgroup == ""
 
 
@@ -659,7 +706,7 @@ preserve
 				over(year, gap(5)) asyvars bar(1, col(green)) bar(2, col(eltblue)) bar(3, col(gold))
 				over(MSAgroup, sort(msa_order)) yti("No. of Publications") legend(r(1))
 			title("`ti'")   subtitle("(1990-2010)");
-			graph export "pubs_byYr_byMSA_life`life01'_nih`nih01'.png", replace as(png) wid(1600) hei(700);
+			graph export "`folder'pubs_byYr_byMSA_life`life01'_nih`nih01'.png", replace as(png) wid(1600) hei(700);
 			#delimit cr
 		}
 	}
@@ -674,7 +721,7 @@ preserve
 			over(year, gap(5)) asyvars bar(1, col(green)) bar(2, col(eltblue)) bar(3, col(gold))
 			over(MSAgroup, sort(msa_order)) yti("No. of Publications") legend(r(1))
 			title("`ti'")   subtitle("(1990-2010)");
-		graph export "pubs_byYr_byMSA_life`life01'.png", replace as(png) wid(1600) hei(700);
+		graph export "`folder'pubs_byYr_byMSA_life`life01'.png", replace as(png) wid(1600) hei(700);
 		#delimit cr
 	}
 restore
@@ -709,7 +756,7 @@ preserve
 			 			  3 "Matched to BOS, CHI, DC, DUR/CH, LA, NHAV, NY, SD, SEA, or SF/SJ")
 			 		c(1))
 			 title("`ti'") subtitle("(1988-2018)") yti("No. of Publications");
-			graph export "pubs_ts_byMatched_life`life01'_nih`nih01'.png", replace as(png) wid(1600) hei(700);
+			graph export "`folder'pubs_ts_byMatched_life`life01'_nih`nih01'.png", replace as(png) wid(1600) hei(700);
 			#delimit cr
 		}
 	}
@@ -728,9 +775,10 @@ preserve
 		 			  3 "Matched to BOS, CHI, DC, DUR/CH, LA, NHAV, NY, SD, SEA, or SF/SJ")
 		 		c(1))
 		 title("`ti'") subtitle("(1998-2018)") yti("No. of Publications");
-		graph export "pubs_ts_byMatched_life`life01'.png", replace as(png) wid(1600) hei(700);
+		graph export "`folder'pubs_ts_byMatched_life`life01'.png", replace as(png) wid(1600) hei(700);
 		#delimit cr
 	}
+restore
 *---------------------------
 }
 *---------------------------
@@ -743,30 +791,6 @@ use affls_master_2005.dta, clear
 gen has_affl = affl != ""
 gen usa = has_affl & inlist(country, "", "USA")
 
-preserve
-	#delimit ;
-	collapse (count) Total = pmid
-			 (sum) w_Affiliation = has_affl 
-			 (sum) USA = usa
-			 (count) Final = cbsacode, by(year);
-	#delimit cr
-	sort year
-	export delimited sample_byYr_10-1-2019.csv, replace
-restore
-
-preserve
-	collapse (sum) USA = usa (count) final = cbsacode, by(year lifesci)
-	gen coverage = final/USA * 100
-	#delimit ;
-	tw (line coverage year if lifesci, lc(green) lp(l))
-	   (line coverage year if !lifesci, lc(navy) lp(l)),
-	 legend(order(1 "Life Science" 2 "Non-Life Science"))
-	 yti("Share of US Publications with Found MSA Code (%)")
-	 xti("Year");
-	#delimit cr
-	graph export coverage_byLifeNonLife_10-1-19.png, as(png) replace wid(1200) hei(700)
-restore
-
 gen MSAgroup = "BOS" if cbsacode == 14460
 	replace MSAgroup = "SF & SJ" if inlist(cbsacode, 41860, 41940)
 	replace MSAgroup = "CHI" if cbsacode == 16980
@@ -777,11 +801,17 @@ gen MSAgroup = "BOS" if cbsacode == 14460
 	replace MSAgroup = "NHAV" if cbsacode == 35300
 	replace MSAgroup = "SEA" if cbsacode == 42660
 	replace MSAgroup = "DUR/CH" if cbsacode == 20500
-
-/* Silenced because using list of top MSAs from Pharma/Patents
+if `old_MSAs' == 0 {
+	replace MSAgroup = "NHAV" if cbsacode == 35300
+	replace MSAgroup = "SEA" if cbsacode == 42660
+	replace MSAgroup = "DUR/CH" if cbsacode == 20500
+	local folder ""
+}
+else {
 	replace MSAgroup = "PHL" if cbsacode == 37980
 	replace MSAgroup = "MIA" if cbsacode == 33100
-*/	
+	local folder "Plots - old Top MSAs/"
+}	
 	replace MSAgroup = "Other" if cbsacode != . & MSAgroup == ""
 
 
@@ -808,7 +838,7 @@ preserve
 					over(year, gap(5)) asyvars bar(1, col(green)) bar(2, col(eltblue)) bar(3, col(gold))
 					over(MSAgroup, sort(msa_order)) yti("No. of Publications") legend(r(1))
 					title("`ti'")  subtitle("(2005-2015)");
-				graph export "pubs_byYr_byMSA_2005_life`life01'_nih`nih01'_pub`pub01'.png", replace as(png) wid(1600) hei(700);
+				graph export "`folder'pubs_byYr_byMSA_2005_life`life01'_nih`nih01'_pub`pub01'.png", replace as(png) wid(1600) hei(700);
 				#delimit cr
 			} // loop through life science/not life science
 		} // don't bother if NIH and !public
@@ -828,7 +858,7 @@ preserve
 			over(year, gap(5)) asyvars bar(1, col(green)) bar(2, col(eltblue)) bar(3, col(gold))
 			over(MSAgroup, sort(msa_order)) yti("No. of Publications") legend(r(1))
 			title("`ti'") subtitle("(2005-2015)");
-		graph export "pubs_byYr_byMSA_2005_life`life01'.png", replace as(png) wid(1600) hei(700);
+		graph export "`folder'pubs_byYr_byMSA_2005_life`life01'.png", replace as(png) wid(1600) hei(700);
 		#delimit cr
 	}
 restore
@@ -869,7 +899,8 @@ preserve
 				 			  3 "Matched to BOS, CHI, DC, DUR/CH, LA, NHAV, NY, SD, SEA, or SF/SJ")
 				 		c(1))
 				 title("`ti'") subtitle("(2005-2018)") yti("No. of Publications");
-				graph export "pubs_ts_byMatched_2005_life`life01'_nih`nih01'_pub`pub01'.png", replace as(png) wid(1600) hei(700);
+				graph export "`folder'pubs_ts_byMatched_2005_life`life01'_nih`nih01'_pub`pub01'.png",
+					replace as(png) wid(1600) hei(700);
 				#delimit cr
 			} // loop through life science/not life science
 		} // don't bother if NIH and !public
@@ -890,7 +921,130 @@ preserve
 		 			  3 "Matched to BOS, CHI, DC, DUR/CH, LA, NHAV, NY, SD, SEA, or SF/SJ")
 		 		c(1))
 		 title("`ti'") subtitle("(2005-2018)") yti("No. of Publications");
-		graph export "pubs_ts_byMatched_2005_life`life01'.png", replace as(png) wid(1600) hei(700);
+		graph export "`folder'pubs_ts_byMatched_2005_life`life01'.png", replace as(png) wid(1600) hei(700);
+		#delimit cr
+	}
+*---------------------------
+}
+*---------------------------
+*---------------------------
+if `non_us' == 1 {
+*---------------------------
+use affls_master.dta, clear
+
+gen has_affl = affl != ""
+gen has_country = country != ""
+
+preserve
+	#delimit ;
+	collapse (count) Total = pmid
+			 (sum) w_Affiliation = has_affl w_Country = has_country, by(year);
+	#delimit cr
+	sort year
+	export delimited sample_wCountry_byYr_10-3-2019.csv, replace
+restore
+
+preserve
+	collapse (sum) w_Affiliation = has_affl w_Country = has_country, by(year lifesci)
+	gen coverage = w_Country/w_Affiliation * 100
+	#delimit ;
+	tw (line coverage year if lifesci, lc(green) lp(l))
+	   (line coverage year if !lifesci, lc(navy) lp(l)),
+	 legend(order(1 "Life Science" 2 "Non-Life Science"))
+	 yti("Share of Publications with Matched Country (%)")
+	 xti("Year");
+	#delimit cr
+	graph export coverage_wCountry_10-3-19.png, as(png) replace wid(1200) hei(700)
+restore
+
+tab country, sort
+pause
+preserve
+	collapse (count) pmid, by(MSAgroup year nih lifesci)
+	forval nih01 = 0/1 {
+		forval life01 = 0/1 {
+			if `nih01' == 1 local ti "NIH-Funded"
+			if `nih01' == 0 local ti "Non-NIH-Funded"
+
+			if `life01' == 1 local ti "`ti' Life Science Research"
+			if `life01' == 0 local ti "`ti' Non-Life Science Research"
+
+			#delimit ;
+			graph bar (asis) pmid if inlist(year, 1990, 2000, 2010) & !inlist(MSAgroup, "", "Other") 
+					& lifesci == `life01' & nih == `nih01', 
+				over(year, gap(5)) asyvars bar(1, col(green)) bar(2, col(eltblue)) bar(3, col(gold))
+				over(MSAgroup, sort(msa_order)) yti("No. of Publications") legend(r(1))
+			title("`ti'")   subtitle("(1990-2010)");
+			graph export "pubs_byYr_byCountry_life`life01'_nih`nih01'.png", replace as(png) wid(1600) hei(700);
+			#delimit cr
+		}
+	}
+	collapse (sum) pmid, by(MSAgroup year lifesci)
+	forval life01 = 0/1 {
+		if `life01' == 1 local ti "Total Life Science Research"
+		if `life01' == 0 local ti "Total Non-Life Science Research"
+
+		#delimit ;
+		graph bar (asis) pmid if inlist(year, 1990, 2000, 2010) & !inlist(MSAgroup, "", "Other") 
+				& lifesci == `life01', 
+			over(year, gap(5)) asyvars bar(1, col(green)) bar(2, col(eltblue)) bar(3, col(gold))
+			over(MSAgroup, sort(msa_order)) yti("No. of Publications") legend(r(1))
+			title("`ti'")   subtitle("(1990-2010)");
+		graph export "pubs_byYr_byCountry_life`life01'.png", replace as(png) wid(1600) hei(700);
+		#delimit cr
+	}
+restore
+
+
+gen match_group = "TopMSA" if !inlist(MSAgroup, "", "Other")
+replace match_group = "OtherMSA" if MSAgroup == "Other"
+replace match_group = "NotMatched" if has_affl == 1 & cbsacode == . & inlist(country, "", "USA")
+
+preserve
+	collapse (count) pubs = pmid, by(match_group year lifesci nih)
+	keep if match_group != ""
+
+	reshape wide pubs, i(year lifesci nih) j(match_group) string 
+	gen pubsOtherMSA_adj = pubsOtherMSA + pubsTopMSA
+	gen pubsNotMatched_adj = pubsNotMatched + pubsOtherMSA + pubsTopMSA
+
+	forval nih01 = 0/1 {
+		forval life01 = 0/1 {
+			if `nih01' == 1 local ti "NIH-Funded"
+			if `nih01' == 0 local ti "Non-NIH-Funded"
+
+			if `life01' == 1 local ti "`ti' Life Science Research"
+			if `life01' == 0 local ti "`ti' Non-Life Science Research"
+
+			#delimit ;
+			tw (area pubsNotMatched_adj year if lifesci == `life01' & nih == `nih01', col(gs8))
+			   (area pubsOtherMSA_adj year if lifesci == `life01' & nih == `nih01', col(navy))
+			   (area pubsTopMSA year if lifesci == `life01' & nih == `nih01', col(cranberry)),
+			 legend(order(1 "Have Affiliations but Not Matched to MSA Codes"
+			 			  2 "Matched to MSA Codes Other than Top 10"
+			 			  3 "Matched to BOS, CHI, DC, DUR/CH, LA, NHAV, NY, SD, SEA, or SF/SJ")
+			 		c(1))
+			 title("`ti'") subtitle("(1988-2018)") yti("No. of Publications");
+			graph export "pubs_ts_byMatchedCountry_life`life01'_nih`nih01'.png", replace as(png) wid(1600) hei(700);
+			#delimit cr
+		}
+	}
+
+	collapse (sum) pubs*, by(year lifesci)
+	forval life01 = 0/1 {
+		if `life01' == 1 local ti "Total Life Science Research"
+		if `life01' == 0 local ti "Total Non-Life Science Research"
+
+		#delimit ;
+		tw (area pubsNotMatched_adj year if lifesci == `life01', col(gs8))
+		   (area pubsOtherMSA_adj year if lifesci == `life01', col(navy))
+		   (area pubsTopMSA year if lifesci == `life01', col(cranberry)),
+		 legend(order(1 "Have Affiliations but Not Matched to MSA Codes"
+		 			  2 "Matched to MSA Codes Other than Top 10"
+		 			  3 "Matched to BOS, CHI, DC, DUR/CH, LA, NHAV, NY, SD, SEA, or SF/SJ")
+		 		c(1))
+		 title("`ti'") subtitle("(1998-2018)") yti("No. of Publications");
+		graph export "pubs_ts_byMatchedCountry_life`life01'.png", replace as(png) wid(1600) hei(700);
 		#delimit cr
 	}
 *---------------------------
