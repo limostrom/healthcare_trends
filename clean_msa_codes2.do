@@ -78,7 +78,7 @@ replace city = "Honolulu" if city == "Urban Honolulu"
 merge m:1 state_fips using `state_fips', nogen keepus(state_name state_abbr)
 
 local state_names zzz "Alabama" "Alaska" "Arizona" "Arkansas" "California" "Colorado" "Connecticut" ///
-						"Delaware" "Florida" "Georgia" "Hawaii" "Idaho" "Illinois" "Indiana" "Iowa" ///
+						"Delaware" "Florida" "Georgia" "Hawaii" "Hawai'i" "Idaho" "Illinois" "Indiana" "Iowa" ///
 						"Kansas" "Kentucky" "Louisiana" "Maine" "Maryland" "Massachusetts" "Michigan" ///
 						"Minnesota" "Mississippi" "Missouri" "Montana" "Nebraska" "Nevada" ///
 						"New Hampshire" "New Jersey" "New Mexico" "New York" "North Carolina" ///
