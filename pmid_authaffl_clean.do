@@ -6,13 +6,16 @@ pmid_authaffl_clean.do
 */
 pause on
 
-local pmids_append 0
+local pmids_append 1
+	local subfolder "1988-2018"
 local pmids_append_2005 0
 local affls_append 0
-local affls_clean 1
+local hs_affls_append 0
+local ct_affls_append 0
+local affls_clean 0
+	local ext "" // set to "" for lifesci, "_hs" for health services, "_ct" for clinical trials
 local full_save 1
 local full_save_2005 0
-
 
 cap cd "C:\Users\lmostrom\Documents\Amitabh\"
 global repo "../GitHub/healthcare_trends/"
@@ -22,11 +25,11 @@ global repo "../GitHub/healthcare_trends/"
 *================================================================================
 if `pmids_append' == 1 {
 *---------------------------
-local filelist: dir "PMIDs\1988-2018\" files "*.csv"
+local filelist: dir "PMIDs/`subfolder'/" files "*.csv"
 
 local i = 1
 foreach file of local filelist {
-	import delimited pmid query_name using "PMIDs/1988-2018/`file'", rowr(2:) clear
+	import delimited pmid query_name using "PMIDs/`subfolder'/`file'", rowr(2:) clear
 	dis "`file'"
 	if `i' == 1 {
 		tempfile full_pmids
@@ -49,9 +52,8 @@ gen lifesci = substr(query_name, 1, 7) == "LifeSci"
 bys pmid: egen min_year = min(year)
 	keep if year == min_year
 isid pmid
-pause
 
-save pmids_QAqueries_full.dta, replace
+save pmids_QAqueries`ext'_full.dta, replace
 
 *---------------------------
 }
@@ -100,11 +102,13 @@ if `affls_append' == 1 {
 *---------------------------
 local i = 1
 
-foreach subset in life_nih life_notnih_1_40000 life_notnih_40001_80000 life_notnih_80001_111999 ///
-				nonlife_nih nonlife_notnih_1_40000 nonlife_notnih_40001_70000 ///
-				nonlife_notnih_70001_120000 nonlife_notnih_120001_156438 {
+foreach subset in QA_life_nih JAMA_and_NI_QA_Life_NIH_1988 JAMA_and_NI_Life_notNIHp1_1988_2018 ///
+				JAMA_and_NI_Life_notNIHp2_1988_2018 JAMA_and_NI_Life_notNIHp3_1988_2018 ///
+				QA_life_notnih_1_40000 QA_life_notnih_40001_80000 QA_life_notnih_80001_111999 ///
+				QA_nonlife_nih QA_nonlife_notnih_1_40000 QA_nonlife_notnih_40001_70000 ///
+				QA_nonlife_notnih_70001_120000 QA_nonlife_notnih_120001_156438 {
 	
-	import delimited AuthAffs_QA_`subset'.csv, clear bindquote(nobind) varn(1)
+	import delimited AuthAffs_`subset'.csv, clear bindquote(nobind) varn(1)
 
 	foreach var of varlist v* {
 		replace affls = affls + ", " + `var' if `var' != ""
@@ -113,13 +117,22 @@ foreach subset in life_nih life_notnih_1_40000 life_notnih_40001_80000 life_notn
 	replace affls = affls[_n+1] if affls != "NA"
 		ren affls affl_raw
 	gen affl = subinstr(affl_raw, "&amp;", "and", .)
+	drop if affl_raw == "No affiliation node"
+	drop if substr(affl_raw, 2, .) == "<AffiliationInfo>"
 	* Drop affiliations of authors after the first author
 	gen pos_2nd_auth = strpos(affl, "[2]")
 	replace pos_2nd_auth = strpos(affl, ");") + 2 ///
 			if pos_2nd_auth == 0 & strpos(affl, ");") > 0 // ; after initials in parentheses
 	replace pos_2nd_auth = strpos(affl, "USA") + 3 ///
 			if pos_2nd_auth == 0 & strpos(affl, "USA") > 0
-		replace affl = substr(affl, 1, pos_2nd_auth) if pos_2nd_auth > 0
+	/* Silenced - kills coverage from 2013 on
+	replace pos_2nd_auth = strpos(affl, " with the") - 1 ///
+			if pos_2nd_auth == 0 & strpos(affl, " with the") > 0
+	replace pos_2nd_auth = strpos(affl, " is an") - 1 ///
+			if pos_2nd_auth == 0 & strpos(affl, " is an") > 0
+	*/
+
+	replace affl = substr(affl, 1, pos_2nd_auth) if pos_2nd_auth > 0
 
 	destring pmid, replace force
 		drop if pmid == .
@@ -142,11 +155,104 @@ save "full_auth_affls.dta", replace
 *---------------------------
 
 *---------------------------
+if `hs_affls_append' == 1 {
+*---------------------------
+import delimited AuthAffs_healthserv_QA_1988_2018.csv, clear bindquote(nobind) varn(1)
+
+foreach var of varlist v* {
+	replace affls = affls + ", " + `var' if `var' != ""
+}
+
+replace affls = affls[_n+1] if affls != "NA"
+	ren affls affl_raw
+gen affl = subinstr(affl_raw, "&amp;", "and", .)
+* Drop affiliations of authors after the first author
+gen pos_2nd_auth = strpos(affl, "[2]")
+replace pos_2nd_auth = strpos(affl, ");") + 2 ///
+		if pos_2nd_auth == 0 & strpos(affl, ");") > 0 // ; after initials in parentheses
+replace pos_2nd_auth = strpos(affl, "USA") + 3 ///
+		if pos_2nd_auth == 0 & strpos(affl, "USA") > 0
+/* Silenced - kills coverage from 2013 on
+replace pos_2nd_auth = strpos(affl, " with the") - 1 ///
+		if pos_2nd_auth == 0 & strpos(affl, " with the") > 0
+replace pos_2nd_auth = strpos(affl, " is an") - 1 ///
+		if pos_2nd_auth == 0 & strpos(affl, " is an") > 0
+*/
+
+replace affl = substr(affl, 1, pos_2nd_auth) if pos_2nd_auth > 0
+
+
+destring pmid, replace force
+	drop if pmid == .
+drop v*
+
+duplicates drop
+save "full_auth_affls_hs.dta", replace
+
+*---------------------------
+}
+*---------------------------
+
+*---------------------------
+if `ct_affls_append' == 1 {
+*---------------------------
+local i = 1
+
+foreach subset in 1988_2008 2009p1 2009p2 2010_2018 {
+	
+	import delimited AuthAffs_clintr_`subset'.csv, clear bindquote(nobind) varn(1)
+
+	foreach var of varlist v* {
+		replace affls = affls + ", " + `var' if `var' != ""
+	}
+
+	replace affls = affls[_n+1] if affls != "NA"
+		ren affls affl_raw
+	gen affl = subinstr(affl_raw, "&amp;", "and", .)
+	drop if affl_raw == "No affiliation node"
+	drop if substr(affl_raw, 2, .) == "<AffiliationInfo>"
+	* Drop affiliations of authors after the first author
+	gen pos_2nd_auth = strpos(affl, "[2]")
+	replace pos_2nd_auth = strpos(affl, ");") + 2 ///
+			if pos_2nd_auth == 0 & strpos(affl, ");") > 0 // ; after initials in parentheses
+	replace pos_2nd_auth = strpos(affl, "USA") + 3 ///
+			if pos_2nd_auth == 0 & strpos(affl, "USA") > 0
+	/* Silenced - kills coverage from 2013 on
+	replace pos_2nd_auth = strpos(affl, " with the") - 1 ///
+			if pos_2nd_auth == 0 & strpos(affl, " with the") > 0
+	replace pos_2nd_auth = strpos(affl, " is an") - 1 ///
+			if pos_2nd_auth == 0 & strpos(affl, " is an") > 0
+	*/
+
+	replace affl = substr(affl, 1, pos_2nd_auth) if pos_2nd_auth > 0
+
+	destring pmid, replace force
+		drop if pmid == .
+	drop v*
+
+	if `i' == 1 {
+		tempfile full_affls
+		save `full_affls', replace
+	}
+	if `i' > 1 {
+		append using `full_affls'
+		save `full_affls', replace
+	}
+	local ++i
+}
+duplicates drop // some appeared in more than one year
+save "full_auth_affls_ct.dta", replace
+*---------------------------
+}
+*---------------------------
+
+
+*---------------------------
 if `affls_clean' == 1 {
 *---------------------------
 include $repo/clean_msa_codes2.do
 
-use "full_auth_affls.dta", clear
+use "full_auth_affls`ext'.dta", clear
 	
 	replace affl = "" if affl_raw == "NA" ///
 					| substr(affl_raw, 1, 3) == " . " ///
@@ -157,19 +263,12 @@ use "full_auth_affls.dta", clear
 					| substr(affl_raw, 1, 10) == "The Lancet" ///
 					| affl == "["
 
+	replace affl = subinstr(affl, "Saint Louis", "St. Louis", .)
+	replace affl = subinstr(affl, "St Louis", "St. Louis", .)
+
 	*First check country
 	gen country = ""
 	include "$repo/country_tags.do"
-
-		replace country = "United Kingdom" if strpos(affl, "Ackton Hospital") > 0 | ///
-											strpos(affl, "Addenbrooke's Hospital") > 0 | ///
-											strpos(affl, "Brunel University") > 0 | ///
-											strpos(affl, "Aberdeen Royal Infirmary") > 0 | ///
-											strpos(affl, "University of Oxford") > 0 | ///
-						(strpos(affl, "Ipswich Hospital") > 0 & strpos(affl, "Suffolk") > 0)
-		replace country = "Canada" if strpos(affl, "Hamilton") > 0 & ///
-								(strpos(affl, "ON") + strpos(affl, "Ont.") > 0)
-		replace country = "France" if strpos(affl, "Institut de Chimie") > 0
 
 		*Common points of confusion
 		replace country = "USA" if strpos(affl, "Beth Israel") > 0 & country == "Israel"
@@ -178,6 +277,7 @@ use "full_auth_affls.dta", clear
 					strpos(affl, "University of New England") == 0
 			replace country = "Australia" if strpos(affl, "University of New England") > 0
 		replace country = "USA" if strpos(affl, "Dartmouth") > 0 & country == "Lebanon"
+		replace country = "USA" if strpos(affl, "Indiana") > 0 & country == "India"
 
 	*Then find zipcodes
 	gen zip = regexs(0) if regexm(affl, "[0-9][0-9][0-9][0-9][0-9]") & inlist(country, "USA", "")
@@ -418,11 +518,15 @@ use "full_auth_affls.dta", clear
 	replace state_abbr = "AK" if city == "Fairbanks"  & state_abbr == ""
 	replace state_abbr = "ND" if city == "Fargo"
 	replace state_abbr = "CT" if city == "Farmington" & substr(zip, 1, 2) == "06"
+	replace state_abbr = "MI" if city == "Flint"
 	replace state_abbr = "CO" if city == "Fort Collins" & substr(zip, 1, 2) == "80"
 	replace state_abbr = "FL" if city == "Gainesville" & state_abbr == ""
 	replace state_abbr = "MI" if city == "Grand Rapids" & substr(zip, 1, 2) == "49"
 	replace state_abbr = "NC" if city == "Greenville" & substr(zip, 1, 2) == "27"
 	replace city = "Palo Alto" if city == "Hanover" & state_abbr == "CA" & substr(zip, 1, 2) == "94"
+	replace state_abbr = "CT" if city == "Hartford" & state_abbr == ""
+	replace state_abbr = "MS" if city == "Hattiesburg"  & state_abbr == ""
+	replace city = "Honolulu" if city == "" & inlist(state_abbr, "", "HI") & strpos(affl, "Manoa") > 0
 	replace state_abbr = "HI" if city == "Honolulu" & state_abbr == ""
 	replace city = "Stanford" if city == "Hoover" & state_abbr == "CA"
 	replace state_abbr = "TX" if city == "Houston" & ///
@@ -457,6 +561,8 @@ use "full_auth_affls.dta", clear
 	replace state_abbr = "TN" if city == "Nashville"
 	replace state_abbr = "CT" if inlist(city, "New Haven", "New London")
 	replace state_abbr = "LA" if city == "New Orleans"
+	replace city = "New Brunswick" if city == "" & inlist(state_abbr, "", "NJ") & strpos(lower(affl), "rutgers") > 0
+	replace state_abbr = "NJ" if city == "New Brunswick" & state_abbr == ""
 	replace state_abbr = "NJ" if city == "Newark" & substr(zip, 1, 2) == "07"
 		replace state_abbr = "DE" if city == "Newark" & substr(zip, 1, 2) == "19"
 	replace state_abbr = "VA" if city == "Norfolk"
@@ -467,7 +573,7 @@ use "full_auth_affls.dta", clear
 	replace state_abbr = "PA" if inlist(city, "Philadelphia", "Pittsburgh")
 	replace state_abbr = "AZ" if city == "Phoenix"
 	replace state_abbr = "OR" if city == "Portland" & (zip == "" | substr(zip,1,2) == "97")
-	replace state_abbr = "NJ" if city == "Princeton" & substr(zip,1,2) == "08"
+	replace state_abbr = "NJ" if city == "Princeton" & (substr(zip,1,2) == "08" | state_abbr == "")
 	replace state_abbr = "RI" if city == "Providence"
 	replace city = "Stanford" if city == "Pueblo" & state_abbr == "CA" & ///
 					strpos(affl, "Stanford") > 0
@@ -496,6 +602,7 @@ use "full_auth_affls.dta", clear
 	replace state_abbr = "MN" if city == "St. Paul"
 	replace state_abbr = "WA" if city == "Tacoma"
 	replace state_abbr = "FL" if city == "Tampa"
+	replace state_abbr = "AZ" if city == "Tempe"
 	replace state_abbr = "KS" if city == "Topeka"
 	replace state_abbr = "AZ" if city == "Tucson"
 	replace state_abbr = "AL" if city == "Tuscaloosa"
@@ -519,6 +626,14 @@ use "full_auth_affls.dta", clear
 	replace state_abbr = "OH" if city == "Youngstown"
 	replace city = "Hanover" if city == "" & strpos(affl, "Dartmouth") > 0 & inlist(state_abbr, "", "NH")
 		replace state_abbr = "NH" if strpos(affl, "Dartmouth") > 0 & city == "Hanover" & state_abbr == ""
+	replace city = "Washington" if city == "" & strpos(affl, "Urban Institute") > 0 & inlist(state_abbr, "", "DC")
+		replace state_abbr = "DC" if strpos(affl, "Urban Institute") > 0 & city == "Washington" & state_abbr == ""
+	replace city = "Washington" if city == "" & strpos(affl, "Georgetown University") > 0 & city == "Georgetown"
+		replace state_abbr = "DC" if strpos(affl, "Georgetown University") > 0 & city == "Washington" & state_abbr == ""
+	replace city = "Washington" if city == "" & strpos(affl, "House of Representatives") > 0 & country == "USA"
+		replace state_abbr = "DC" if strpos(affl, "House of Representatives") > 0 & city == "Washington" & state_abbr == ""
+	replace city = "Washington" if city == "" & strpos(affl, "Congress") > 0 & country == "USA"
+		replace state_abbr = "DC" if strpos(affl, "Congress") > 0 & city == "Washington" & state_abbr == ""
 
 	replace city = "Washington" if state_abbr == "DC" & city == ""
 	
@@ -550,7 +665,7 @@ use "full_auth_affls.dta", clear
 			strpos(affl, "Duke University") + strpos(affl, "Duke Medical") > 0
 			replace state_abbr = "NC" if city == "Durham" & state_abbr == ""
 	replace city = "Washington" if city == "" & inlist(state_abbr, "", "DC") & ///
-			strpos(affl, "Smithsonian") > 0
+			strpos(affl, "Smithsonian") > 0 | strpos(affl, "Brookings Institution") > 0
 			replace state_abbr = "DC" if city == "Washington" & strpos(affl, "Smithsonian") > 0
 	replace city = "Baltimore" if city == "" & inlist(state_abbr, "", "MD") & ///
 			strpos(affl, "Johns Hopkins") > 0
@@ -558,24 +673,57 @@ use "full_auth_affls.dta", clear
 	replace city = "Providence" if city == "" & inlist(state_abbr, "", "RI") & ///
 			strpos(affl, "Brown University") > 0
 			replace state_abbr = "RI" if city == "Providence" & state_abbr == ""
+	replace city = "Evanston" if city == "" & inlist(state_abbr, "", "IL") & ///
+			strpos(affl, "Northwestern University") > 0
+			replace state_abbr = "IL" if city == "Evanston" & state_abbr == ""
+	replace city = "Waltham" if city == "" & inlist(state_abbr, "", "MA") & ///
+			strpos(affl, "Brandeis University") > 0
+			replace state_abbr = "MA" if city == "Waltham" & state_abbr == ""
 	replace city = "New York" if city == "" & inlist(state_abbr, "", "NY") & ///
-			strpos(affl, "Mount Sinai") > 0
+			(strpos(affl, "Mount Sinai") > 0 | strpos(affl, "Yeshiva University") > 0)
 			replace state_abbr = "NY" if city == "New York" & state_abbr == ""
 	replace city = "Stanford" if strpos(affl, "Stanford") > 0 & city == "" & inlist(state_abbr, "", "CA")
 		replace state_abbr = "CA" if city == "Stanford" & state_abbr == ""
 	replace city = "Santa Clara" if city == "Stanford" & state_abbr == "CA"
-	replace city = "New York" if (state_abbr == "NY" | state_name == "New York") & ///
+	replace city = "New York" if (inlist(state_abbr, "NY", "") | state_name == "New York") & ///
 			city == "" & strpos(affl, "Brooklyn") + strpos(affl, "Bronx") + strpos(affl, "Queens") > 0
-	replace city = "New York" if city == "York" & state_abbr == "NY" & inlist(substr(zip,1,3), "100", "112")
+	replace city = "New York" if (city == "York" & state_abbr == "NY") | ///
+					(inlist(substr(zip,1,3), "100", "112") & strpos(affl, "Brooklyn") > 0)
+		replace state_abbr = "New York" if city == "New York"
+	replace city = "Atlanta" if (strpos(affl, "Centers for Disease Control") > 0 ///
+								| strpos(affl, "Emory University") > 0) ///
+					& city == "" & inlist(state_abbr, "", "GA")
+		replace state_abbr = "GA" if (strpos(affl, "Centers for Disease Control") > 0 ///
+									| strpos(affl, "Emory University") > 0) ///
+					& inlist(city, "", "Atlanta") & state_abbr == ""
 
 	replace country = "Austria" if city == "Vienna" & state_name == "" & state_abbr == "" & country == ""
 	replace country = "Canada" if city == "Kingston" & country == "" & state_abbr == ""
 		replace country = "Canada" if city == "Victoria" & strpos(affl, "East Geelong") > 0
-	replace country = "Peru" if city == "Lima"
+	replace country = "Peru" if city == "Lima" & state_abbr == "" & state_name == ""
 	replace country = "United Kingdom" if inlist(city, "Bristol", "Cambridge", "Manchester", ///
 												"Norwich", "Salisbury", "Warwick", "Oxford")  & ///
 				state_name == "" & state_abbr == "" & country == ""
-		replace country = "United Kingdom" if city == "Victoria" & strpos(affl, "Victoria Infirmary") > 0
+	replace country = "United Kingdom" if city == "Victoria" & strpos(affl, "Victoria Infirmary") > 0
+	replace country = "United Kingdom" if (strpos(affl, "Ackton Hospital") > 0 | ///
+				strpos(affl, "Addenbrooke's Hospital") > 0 | ///
+				strpos(affl, "Brunel University") > 0 | ///
+				strpos(affl, "Aberdeen Royal Infirmary") > 0 | ///
+				strpos(affl, "University of Oxford") > 0 | ///
+				(strpos(affl, "Ipswich Hospital") > 0 & strpos(affl, "Suffolk") > 0)) ///
+				& state_name == "" & state_abbr == "" & country == ""
+	replace country = "Canada" if strpos(affl, "Hamilton") > 0 & ///
+				(strpos(affl, "ON") + strpos(affl, "Ont.") > 0)
+	replace country = "Canada" if (strpos(affl, "McGill University") > 0 | ///
+				strpos(affl, "University of Alberta")) & ///
+				state_name == "" & state_abbr == "" & country == ""
+	replace country = "France" if strpos(affl, "Institut de Chimie") > 0 & ///
+				state_name == "" & state_abbr == "" & country == ""
+	replace country = "Italy" if strpos(affl, "University of Florence") > 0 & ///
+				state_name == "" & state_abbr == "" & country == ""
+
+		
+
 
 	*In case of conflicts / multiple author affiliations
 	replace state_name = "" if state_name != "" & state_abbr != "" & ///
@@ -598,7 +746,7 @@ use "full_auth_affls.dta", clear
 		replace cbsacode = alt_cbsacode if (city == "" | state_abbr == "" | country == "USA") ///
 									& zip != ""
 
-save clean_auth_affls.dta, replace
+save clean_auth_affls`ext'.dta, replace
 
 *---------------------------
 }
@@ -606,11 +754,11 @@ save clean_auth_affls.dta, replace
 *---------------------------
 if `full_save' == 1 {
 *---------------------------
-use clean_auth_affls.dta, clear
+use clean_auth_affls`ext'.dta, clear
 
-merge 1:1 pmid using "pmids_QAqueries_full.dta", nogen assert(2 3)
+merge 1:1 pmid using "pmids_QAqueries`ext'_full.dta", keep(2 3) gen(query_name_merge)
 
-save affls_master.dta, replace
+save affls`ext'_master.dta, replace
 *---------------------------
 }
 *---------------------------
