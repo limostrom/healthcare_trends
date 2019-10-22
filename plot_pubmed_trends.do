@@ -11,52 +11,67 @@ pause on
 
 local diseases_1980 0
 local diseases_2005 0
+local diseases_hhi 1
 local econ_1980 0
 local econ_2005 0
-local health_econ_1980 1
+local health_econ_1980 0
 
 *-----------------------------------------------------------
 if `diseases_1980' == 1 {
 *-------------------	
 cap cd "C:\Users\lmostrom\Documents\Amitabh\"
-import delimited "PubMed_Search_Results_byDisease_from1980.csv", varn(1) clear
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+foreach all_ct in "" "_CT" {
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+import delimited "PubMed_Search_Results`all_ct'_byDisease_from1980.csv", varn(1) clear
+
+if "`all_ct'" == "" local x = 2
+if "`all_ct'" == "_CT" local x = 3
 
 split query_name, gen(disease_area) p("_")
-	gen nih = (disease_area2 == "NIH")
+	gen nih = (disease_area`x' == "NIH")
 	drop query_name
 	ren pub_count count
+
+cap replace count = "0" if count == "NA"
+	cap destring count, replace
 
 preserve
 	ren count total
 	keep if disease_area1 == "Total"
 	*br
 	*pause
-	save "pubmed_results_byyear_total_1980.dta", replace
+	save "pubmed_results`all_ct'_byyear_total_1980.dta", replace
 restore
 preserve
 	ren count totaldisease
 	keep if disease_area1 == "TotalDisease"
 	*br
 	*pause
-	save "pubmed_results_byyear_totaldisease_1980.dta", replace
+	save "pubmed_results`all_ct'_byyear_totaldisease_1980.dta", replace
 restore
 
 ren disease_area1 disease_area
 keep if !inlist(disease_area, "Total", "TotalDisease")
 replace disease_area = lower(disease_area)
-drop disease_area2
+drop disease_area`x'
 
-save "pubmed_results_byyear_bydisease_1980.dta", replace
 
+save "pubmed_results`all_ct'_byyear_bydisease_1980.dta", replace
+
+*-------------------------------------------------------------
+if "`all_ct'" == "" local yvar "Publications"
+if "`all_ct'" == "_CT" local yvar "Clinical Trials"
 *-------------------------------------------------------------
 
 bys nih year: egen sum_cats = total(count)
 gen sh_of_total = count/sum_cats*100
 
-merge m:1 year nih using "pubmed_results_byyear_total_1980.dta", nogen keep(1 3) keepus(total)
-merge m:1 year nih using "pubmed_results_byyear_totaldisease_1980.dta", nogen keep(1 3) keepus(totaldisease)
+merge m:1 year nih using "pubmed_results`all_ct'_byyear_total_1980.dta", nogen keep(1 3) keepus(total)
+merge m:1 year nih using "pubmed_results`all_ct'_byyear_totaldisease_1980.dta", nogen keep(1 3) keepus(totaldisease)
 
-keep if inrange(year, 1980, 2018)
+if "`all_ct'" == "" keep if inrange(year, 1980, 2018)
+else keep if inrange(year, 1992, 2018)
 
 *** Plot Comparison of Sum of Articles by Disease Area vs. Total Articles on PubMed
 	preserve
@@ -70,16 +85,66 @@ keep if inrange(year, 1980, 2018)
 		   (line frac_disease year if nih == 1, lc(red)),
 		 legend(order(1 "Not NIH" 2 "NIH"))
 		 /*yline(1, lc(gs8)) xline(1980, lp(-) lc(gs8))*/
-		 yti("Fraction of Publications About Disease");
-		graph export "disease_share_of_pubmed_1980-2018.png", replace as(png) wid(1200) hei(700);
+		 yti("Fraction of `yvar' About Disease");
+		graph export "disease_share_of_pubmed`all_ct'_1980-2018.png", replace as(png) wid(1200) hei(700);
 
 		tw (line frac_cat_coverage year if nih == 0, lc(blue))
 		   (line frac_cat_coverage year if nih == 1, lc(red)),
 		 legend(order(1 "Not NIH" 2 "NIH"))
 		 /*yline(1, lc(gs8)) xline(1980, lp(-) lc(gs8))*/
-		 yti("Ratio of Sum of Category Counts to Total Disease Counts" "(Overcounting Ratio)");
-		graph export "sum_of_disease_cats_div_by_disease_pubs_1980-2018.png", replace as(png) wid(1200) hei(700);
+		 yti("Ratio of Sum of Category `yvar' to Total Disease `yvar'" "(Overcounting Ratio)");
+		graph export "sum_of_disease_cats_div_by_disease_pubs`all_ct'_1980-2018.png", replace as(png) wid(1200) hei(700);
 		#delimit cr
+
+	restore
+
+*** Plot Shares of All Research by Disease Area
+	preserve
+		collapse (sum) count, by(year disease_area)
+		bys year: egen sum_cats = total(count)
+		gen sh_of_total = count/sum_cats*100
+
+		#delimit ;
+		tw (line sh_of_total year if disease_area == "cardio", lc(cranberry) lp(-)) /* 1 */
+		   (line sh_of_total year if disease_area == "cheminduced", lc(sienna) lp(_))
+		   (line sh_of_total year if disease_area == "digestive", lc(erose) lp(--.))
+		   (line sh_of_total year if disease_area == "endocrine", lc(dkorange) lp(l))
+		   (line sh_of_total year if disease_area == "ent", lc(midgreen) lp(-.))
+		   (line sh_of_total year if disease_area == "eye", lc(gs12) lp(_.)) /* 6 */
+		   (line sh_of_total year if disease_area == "female", lc(pink) lp(__.))
+		   (line sh_of_total year if disease_area == "hemic", lc(eltblue) lp(--.))
+		   (line sh_of_total year if disease_area == "immune", lc(gs7) lp(.))
+		   (line sh_of_total year if disease_area == "male", lc(blue) lp(_))
+		   (line sh_of_total year if disease_area == "muscle", lc(gold) lp(-)) /* 11 */
+		   (line sh_of_total year if disease_area == "neoplasms", lc(orange) lp(.))
+		   (line sh_of_total year if disease_area == "nervous", lc(lavender) lp(_))
+		   (line sh_of_total year if disease_area == "nutrition", lc(lime) lp(_))
+		   (line sh_of_total year if disease_area == "psych", lc(purple) lp(-))
+		   (line sh_of_total year if disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
+		   (line sh_of_total year if disease_area == "skin", lc(magenta) lp(_..))
+		   (line sh_of_total year if disease_area == "infectiousdiseases", lc(red) lp(.)),
+		 legend(order(15 "Psychiatry & Psychology"
+					  1  "Cardiovascular"
+		 			  12 "Cancer"
+		 			  13 "Nervous System & Cognition"
+		 			  16 "Respiratory"
+		 			  9  "Immune System"
+		 			  14 "Nutrition"
+		 			  7  "Female Urogential & Pregnancy"
+		 			  11 "Musculoskeletal"
+		 			  3  "Digestive"
+		 			  17 "Skin & Connective Tissue"
+		 			  10 "Male Urogenital"
+		 			  8  "Hemic & Lymphomatic"
+		 			  4  "Endocrine"
+		 			  5  "ENT & Mouth"
+		 			  6  "Eye"
+					  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
+					  18 "Infectious Diseases") c(1) pos(3))
+		 yti("Share of `yvar' (%)") title("All Funding Types");
+
+		 graph export "pubmed_results_all`all_ct'_notwtd_1980-2018.png", replace as(png) wid(1600) hei(700);
+		 #delimit cr
 
 	restore
 
@@ -121,9 +186,9 @@ keep if inrange(year, 1980, 2018)
 				  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
 	 			  6  "Eye"
 	 			  5  "ENT & Mouth") c(1) pos(3))
-	 yti("Share of Publications (%)") title("Not NIH-Funded");
+	 yti("Share of `yvar' (%)") title("Not NIH-Funded");
 
-	 graph export "pubmed_results_notnih_notwtd_1980-2018.png", replace as(png) wid(1600) hei(700);
+	 graph export "pubmed_results_notnih_notwtd`all_ct'_1980-2018.png", replace as(png) wid(1600) hei(700);
 	 #delimit cr
 
 *** Plot Shares of NIH-Funded Research by Disease Area
@@ -164,10 +229,11 @@ keep if inrange(year, 1980, 2018)
 				  5  "ENT & Mouth"
 	 			  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
 	 			  18 "Infectious Diseases") c(1) pos(3))
-	 yti("Share of Publications (%)") title("NIH-Funded");
+	 yti("Share of `yvar' (%)") title("NIH-Funded");
 
-	 graph export "pubmed_results_nih_notwtd_1980-2018.png", replace as(png) wid(1600) hei(700);
+	 graph export "pubmed_results_nih_notwtd`all_ct'_1980-2018.png", replace as(png) wid(1600) hei(700);
 	 #delimit cr
+} // end Publications / Clinical Trials loop
 *-------------------
 }
 *-------------------
@@ -176,47 +242,56 @@ keep if inrange(year, 1980, 2018)
 if `diseases_2005' == 1 {
 *-------------------	
 cap cd "C:\Users\lmostrom\Documents\Amitabh\"
-import delimited "PubMed_Search_Results_byDisease_from2005.csv", varn(1) clear
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+foreach all_ct in /*""*/ "_CT" {
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+import delimited "PubMed_Search_Results`all_ct'_byDisease_from2005.csv", varn(1) clear
+
+if "`all_ct'" == "" local x = 2
+if "`all_ct'" == "_CT" local x = 3
 
 lab def res_groups 1 "NIH" 2 "Gov't Non-NIH" 3 "Private"
 
 split query_name, gen(disease_area) p("_")
-	gen funding = 1 if (disease_area2 == "NIH")
-		replace funding = 2 if (disease_area2 == "Pub")
-		replace funding = 3 if (disease_area2 == "Priv")
+	gen funding = 1 if (disease_area`x' == "NIH")
+		replace funding = 2 if (disease_area`x' == "Pub")
+		replace funding = 3 if (disease_area`x' == "Priv")
 		lab val funding res_groups
 	drop query_name
 	ren pub_count count
+
+cap replace count = "0" if count == "NA"
+	cap destring count, replace
 
 preserve
 	ren count total
 	keep if disease_area1 == "Total"
 	*br
 	*pause
-	save "pubmed_results_byyear_total_2005.dta", replace
+	save "pubmed_results`all_ct'_byyear_total_2005.dta", replace
 restore
 preserve
 	ren count totaldisease
 	keep if disease_area1 == "TotalDisease"
 	*br
 	*pause
-	save "pubmed_results_byyear_totaldisease_2005.dta", replace
+	save "pubmed_results`all_ct'_byyear_totaldisease_2005.dta", replace
 restore
 
 ren disease_area1 disease_area
 keep if !inlist(disease_area, "Total", "TotalDisease")
 replace disease_area = lower(disease_area)
-drop disease_area2
+drop disease_area`x'
 
-save "pubmed_results_byyear_bydisease_2005.dta", replace
+save "pubmed_results`all_ct'_byyear_bydisease_2005.dta", replace
 
 *-------------------------------------------------------------
 
 bys funding year: egen sum_cats = total(count)
 gen sh_of_total = count/sum_cats*100
 
-merge m:1 year funding using "pubmed_results_byyear_total_2005.dta", nogen keep(1 3) keepus(total)
-merge m:1 year funding using "pubmed_results_byyear_totaldisease_2005.dta", nogen keep(1 3) keepus(totaldisease)
+merge m:1 year funding using "pubmed_results`all_ct'_byyear_total_2005.dta", nogen keep(1 3) keepus(total)
+merge m:1 year funding using "pubmed_results`all_ct'_byyear_totaldisease_2005.dta", nogen keep(1 3) keepus(totaldisease)
 
 keep if inrange(year, 2005, 2018)
 
@@ -233,15 +308,65 @@ keep if inrange(year, 2005, 2018)
 		   (line frac_disease year if funding == 3, lc(green)),
 		 legend(order(1 "NIH" 2 "Gov't Non-NIH" 3 "Private"))
 		 yti("Fraction of Publications About Disease");
-		graph export "disease_share_of_pubmed_2005-2018.png", replace as(png) wid(1200) hei(700);
+		graph export "disease_share_of_pubmed`all_ct'_2005-2018.png", replace as(png) wid(1200) hei(700);
 
 		tw (line frac_cat_coverage year if funding == 1, lc(red))
 		   (line frac_cat_coverage year if funding == 2, lc(blue))
 		   (line frac_cat_coverage year if funding == 3, lc(green)),
 		 legend(order(1 "NIH" 2 "Gov't Non-NIH" 3 "Private"))
 		 yti("Fraction of Publications About Disease");
-		graph export "sum_of_disease_cats_div_by_disease_pubs_2005-2018.png", replace as(png) wid(1200) hei(700);
+		graph export "sum_of_disease_cats_div_by_disease_pubs`all_ct'_2005-2018.png", replace as(png) wid(1200) hei(700);
 		#delimit cr
+
+	restore
+
+*** Plot Shares of All Research by Disease Area
+	preserve
+		collapse (sum) count, by(year disease_area)
+		bys year: egen sum_cats = total(count)
+		gen sh_of_total = count/sum_cats*100
+
+		#delimit ;
+		tw (line sh_of_total year if disease_area == "cardio", lc(cranberry) lp(-)) /* 1 */
+		   (line sh_of_total year if disease_area == "cheminduced", lc(sienna) lp(_))
+		   (line sh_of_total year if disease_area == "digestive", lc(erose) lp(--.))
+		   (line sh_of_total year if disease_area == "endocrine", lc(dkorange) lp(l))
+		   (line sh_of_total year if disease_area == "ent", lc(midgreen) lp(-.))
+		   (line sh_of_total year if disease_area == "eye", lc(gs12) lp(_.)) /* 6 */
+		   (line sh_of_total year if disease_area == "female", lc(pink) lp(__.))
+		   (line sh_of_total year if disease_area == "hemic", lc(eltblue) lp(--.))
+		   (line sh_of_total year if disease_area == "immune", lc(gs7) lp(.))
+		   (line sh_of_total year if disease_area == "male", lc(blue) lp(_))
+		   (line sh_of_total year if disease_area == "muscle", lc(gold) lp(-)) /* 11 */
+		   (line sh_of_total year if disease_area == "neoplasms", lc(orange) lp(.))
+		   (line sh_of_total year if disease_area == "nervous", lc(lavender) lp(_))
+		   (line sh_of_total year if disease_area == "nutrition", lc(lime) lp(_))
+		   (line sh_of_total year if disease_area == "psych", lc(purple) lp(-))
+		   (line sh_of_total year if disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
+		   (line sh_of_total year if disease_area == "skin", lc(magenta) lp(_..))
+		   (line sh_of_total year if disease_area == "infectiousdiseases", lc(red) lp(.)),
+		 legend(order(15 "Psychiatry & Psychology"
+					  1  "Cardiovascular"
+		 			  12 "Cancer"
+		 			  13 "Nervous System & Cognition"
+		 			  16 "Respiratory"
+		 			  9  "Immune System"
+		 			  14 "Nutrition"
+		 			  7  "Female Urogential & Pregnancy"
+		 			  11 "Musculoskeletal"
+		 			  3  "Digestive"
+		 			  17 "Skin & Connective Tissue"
+		 			  10 "Male Urogenital"
+		 			  8  "Hemic & Lymphomatic"
+		 			  4  "Endocrine"
+		 			  5  "ENT & Mouth"
+		 			  6  "Eye"
+					  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
+					  18 "Infectious Diseases") c(1) pos(3))
+		 yti("Share of Publications (%)") title("All Funding Types");
+
+		 graph export "pubmed_results_all_notwtd`all_ct'_2005-2018.png", replace as(png) wid(1600) hei(700);
+		 #delimit cr
 
 	restore
 
@@ -285,7 +410,7 @@ keep if inrange(year, 2005, 2018)
 				  18 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of Publications (%)") title("NIH Funded");
 
-	 graph export "pubmed_results_nih_notwtd_2005-2018.png", replace as(png) wid(1600) hei(700);
+	 graph export "pubmed_results_nih_notwtd`all_ct'_2005-2018.png", replace as(png) wid(1600) hei(700);
 	 #delimit cr
 
 *** Plot Shares of Gov't Non-NIH-Funded Research by Disease Area
@@ -328,7 +453,7 @@ keep if inrange(year, 2005, 2018)
 	 			  18 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of Publications (%)") title("Gov't Non-NIH Funded");
 
-	 graph export "pubmed_results_public_notwtd_2005-2018.png", replace as(png) wid(1600) hei(700);
+	 graph export "pubmed_results_public_notwtd`all_ct'_2005-2018.png", replace as(png) wid(1600) hei(700);
 	 #delimit cr
 
 *** Plot Shares of Privately Funded Research by Disease Area
@@ -371,8 +496,80 @@ keep if inrange(year, 2005, 2018)
 	 			  18 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of Publications (%)") title("Privately Funded");
 
-	 graph export "pubmed_results_private_notwtd_2005-2018.png", replace as(png) wid(1600) hei(700);
+	 graph export "pubmed_results_private_notwtd`all_ct'_2005-2018.png", replace as(png) wid(1600) hei(700);
 	 #delimit cr
+
+*** Plot HHI over time of disease area concentration for NIH vs. Industry
+gen sh_of_total_sq = sh_of_total^2
+collapse (sum) hhi = sh_of_total_sq, by(year funding)
+
+#delimit ;
+tw (line hhi year if funding == 1, lc(red))
+   (line hhi year if funding == 3, lc(green)),
+ legend(order(1 "NIH-Funded" 2 "Industry-Funded") r(1))
+ yti("HHI");
+graph export "disease_areas_hhi_nih_private_notwtd`all_ct'_2005-2018.png", replace as(png) wid(1600) hei(700);
+#delimit cr
+}
+*-------------------
+}
+*-------------------
+
+*-----------------------------------------------------------
+if `diseases_hhi' == 1 {
+*-------------------
+cap cd "C:\Users\lmostrom\Documents\Amitabh\"
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+foreach all_ct in /*""*/ "_CT" {
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+use "pubmed_results`all_ct'_byyear_bydisease_1980.dta", clear
+
+gen funding = 1 if nih == 1
+replace funding = 2.5 if nih == 0
+
+preserve
+	keep if inrange(year, 1980, 2004)
+	tempfile diseases_88_04
+	save `diseases_88_04', replace
+restore
+preserve
+	keep if inrange(year, 2005, 2018)
+	ren count count_1980
+	tempfile diseases_05_18
+	save `diseases_05_18', replace
+restore
+use "pubmed_results`all_ct'_byyear_bydisease_2005.dta", clear
+	gen nih = funding == 1
+append using `diseases_88_04'
+merge m:1 year nih disease_area using `diseases_05_18', keepus(count_1980)
+pause
+
+bys funding year: egen sum_cats = total(count) if disease_area != "psych"
+gen sh_of_total = count/sum_cats*100
+*-------------------------------------------------------------
+if "`all_ct'" == "" local ti "Research Publications"
+if "`all_ct'" == "_CT" local ti "Clinical Trials"
+*-------------------------------------------------------------
+
+if "`all_ct'" == "" keep if inrange(year, 1980, 2018)
+else keep if inrange(year, 1992, 2018)
+
+*** Plot HHI over time of disease area concentration for NIH vs. Industry
+gen sh_of_total_sq = sh_of_total^2
+br
+pause
+collapse (sum) hhi = sh_of_total_sq, by(year funding)
+
+#delimit ;
+tw (line hhi year if funding == 1, lc(red))
+   (line hhi year if funding == 3, lc(green))
+   (line hhi year if funding == 2.5, lc(green) lp(-)),
+ legend(order(1 "NIH-Funded" 2 "Industry-Funded"
+ 			  3 "Non-NIH-Funded (Public & Private)") c(1))
+ yti("HHI") title("`ti'");
+graph export "disease_areas_hhi_notwtd`all_ct'_1980-2018.png", replace as(png) wid(1600) hei(700);
+#delimit cr
+}
 *-------------------
 }
 *-------------------
