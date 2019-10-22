@@ -9,7 +9,8 @@ api_parse = function(query){
   # Form URL using the term
   url = paste0('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=',
                 search,
-                '&tool=my_tool&email=my_email@example.com'
+                '&tool=my_tool&email=my_email@example.com',
+		    '&api_key=ae06e6619c472ede6b6d4ac4b5eadecdb209'
   )
 
   # Query PubMed and save result
@@ -20,17 +21,17 @@ api_parse = function(query){
     xml_node('Count') %>% 
     xml_double() 
 
-  Sys.sleep(0.5)
+  Sys.sleep(runif(1,0.4,0.6))
   
   return(pub_count)
   
 }
 
 ## --------------------------------------------------------------------
-start_year = 1980
+start_year = 2005
 
 # set to econ or diseases:
-group_term = "health_econ_and_policy"
+group_term = "diseases_clintr"
 
 years = as.character(start_year:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
@@ -61,6 +62,11 @@ data = data.frame(
 
 if (group_term == "diseases") {
 	outfile = paste0('Amitabh/PubMed_Search_Results_byDisease_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "diseases_clintr") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_CT_byDisease_from',
 				as.character(start_year),
 				'.csv')
 }
