@@ -1,0 +1,5 @@
+Query_Name	Query
+LifeSciQA_NIH	AND ("JAMA"[Journal] OR "J Am Med Assoc"[Journal] OR "Nat Rev Immunol"[Journal]) AND "Diseases Category"[Mesh] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+LifeSciQA_notNIH	AND ("JAMA"[Journal] OR "J Am Med Assoc"[Journal] OR "Nat Rev Immunol"[Journal]) AND "Diseases Category"[Mesh] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+NonLifeQA_NIH	AND ("JAMA"[Journal] OR "J Am Med Assoc"[Journal] OR "Nat Rev Immunol"[Journal]) NOT "Diseases Category"[Mesh] AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+NonLifeQA_notNIH	AND ("JAMA"[Journal] OR "J Am Med Assoc"[Journal] OR "Nat Rev Immunol"[Journal]) NOT "Diseases Category"[Mesh] NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
