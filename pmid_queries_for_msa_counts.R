@@ -64,7 +64,7 @@ print(N)
 
 pull_affs = function(id) {
   
-# test example: id = 2752138
+# test example: id = 15844664
 
 # Form URL using the term
   url = paste0('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=',
@@ -75,22 +75,28 @@ pull_affs = function(id) {
   #xml = read_xml(curl(url, handle = curl::new_handle("useragent" = "Mozilla/5.0")))
   xml = read_xml(url)
 
+print(id)
+if ('Affiliation' %in% str_extract_all(xml,"\\(?[A-z0-9]{11}\\)?")[[1]]) {
   affil = xml %>%
   	xml_node('AffiliationInfo')
   	affil = as.character(affil)
   	#affil = str_extract_all(affil,"\\(?[0-9]{5}\\)?")[[1]]
+}
+else {
+	affil = "No affiliation node"
+}
 
-  Sys.sleep(runif(1,0.2,0.4))
+  Sys.sleep(runif(1,0.4,0.6))
 
   return(affil)
 }
 ## --------------------------------------------------------------------
 # Author affiliations only reliably show up from 1988 on
-years = as.character(2005:2018)
+years = as.character(1988:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
 
 #list of queries to run year by year
-queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_for_pmids_QA_2005.txt')
+queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_for_pmids_lifesci_QA.txt')
 queries = rep(queries_sub$Query, each=length(year_queries))
 query_names = rep(queries_sub$Query_Name, each=length(year_queries))
 
@@ -101,16 +107,16 @@ query_names = paste0(query_names, years)
 PMIDs = sapply(X = queries, FUN = pull_pmids) %>%
 	unname()
 for (i in 1:length(query_names)) {
-	outfile = paste0('Amitabh/PMIDs/PMIDs_QA_2005_',
+	outfile = paste0('Amitabh/PMIDs/1988-2018/PMIDs_1988_',
 				query_names[i],
 				'.csv')
-	subset = data.frame(PMIDs[i], rep(query_names[i], length(PMIDs[i])))
+	subset = data.frame(unlist(PMIDs[i]), rep(query_names[i], length(unlist(PMIDs[i]))))
 	write_csv(subset, outfile)
 }
 
-AuthAffs = sapply(X = unlist(PMIDs), FUN = pull_affs)
-affs_list = data.frame(pmid = unlist(PMIDs), affls = AuthAffs)
+AuthAffs = sapply(X = unlist(PMIDs[53:62]), FUN = pull_affs)
+affs_list = data.frame(pmid = unlist(PMIDs[53:62]), affls = AuthAffs)
 
-write_csv(affs_list, path = 'Amitabh/AuthAffs_QA_1980_1987.csv')
+write_csv(affs_list, path = 'Amitabh/AuthAffs_JAMA_and_NI_Life_notNIHp3_1988_2018.csv')
 
 
