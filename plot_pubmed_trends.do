@@ -118,29 +118,27 @@ else keep if inrange(year, 1992, 2018)
 		   (line sh_of_total year if disease_area == "muscle", lc(gold) lp(-)) /* 11 */
 		   (line sh_of_total year if disease_area == "neoplasms", lc(orange) lp(.))
 		   (line sh_of_total year if disease_area == "nervous", lc(lavender) lp(_))
-		   (line sh_of_total year if disease_area == "nutrition", lc(lime) lp(_))
 		   (line sh_of_total year if disease_area == "psych", lc(purple) lp(-))
-		   (line sh_of_total year if disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
-		   (line sh_of_total year if disease_area == "skin", lc(magenta) lp(_..))
+		   (line sh_of_total year if disease_area == "respiratory", lc(navy) lp(_))
+		   (line sh_of_total year if disease_area == "skin", lc(magenta) lp(_..)) /* 16 */
 		   (line sh_of_total year if disease_area == "infectiousdiseases", lc(red) lp(.)),
-		 legend(order(15 "Psychiatry & Psychology"
+		 legend(order(14 "Psychiatry & Psychology"
 					  1  "Cardiovascular"
 		 			  12 "Cancer"
 		 			  13 "Nervous System & Cognition"
-		 			  16 "Respiratory"
+		 			  15 "Respiratory"
 		 			  9  "Immune System"
-		 			  14 "Nutrition"
 		 			  7  "Female Urogential & Pregnancy"
 		 			  11 "Musculoskeletal"
 		 			  3  "Digestive"
-		 			  17 "Skin & Connective Tissue"
+		 			  16 "Skin & Connective Tissue"
 		 			  10 "Male Urogenital"
 		 			  8  "Hemic & Lymphomatic"
 		 			  4  "Endocrine"
 		 			  5  "ENT & Mouth"
 		 			  6  "Eye"
 					  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
-					  18 "Infectious Diseases") c(1) pos(3))
+					  17 "Infectious Diseases") c(1) pos(3))
 		 yti("Share of `yvar' (%)") title("All Funding Types");
 
 		 graph export "pubmed_results_all`all_ct'_notwtd_1980-2018.png", replace as(png) wid(1600) hei(700);
@@ -163,24 +161,22 @@ else keep if inrange(year, 1992, 2018)
 	   (line sh_of_total year if nih == 0 & disease_area == "muscle", lc(gold) lp(-)) /* 11 */
 	   (line sh_of_total year if nih == 0 & disease_area == "neoplasms", lc(orange) lp(.))
 	   (line sh_of_total year if nih == 0 & disease_area == "nervous", lc(lavender) lp(_))
-	   (line sh_of_total year if nih == 0 & disease_area == "nutrition", lc(lime) lp(_))
 	   (line sh_of_total year if nih == 0 & disease_area == "psych", lc(purple) lp(-))
-	   (line sh_of_total year if nih == 0 & disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
-	   (line sh_of_total year if nih == 0 & disease_area == "skin", lc(magenta) lp(_..))
+	   (line sh_of_total year if nih == 0 & disease_area == "respiratory", lc(navy) lp(_))
+	   (line sh_of_total year if nih == 0 & disease_area == "skin", lc(magenta) lp(_..)) /* 16 */
 	   (line sh_of_total year if nih == 0 & disease_area == "infectiousdiseases", lc(red) lp(.)),
-	 legend(order(15 "Psychiatry & Psychology"
+	 legend(order(14 "Psychiatry & Psychology"
 				  12 "Cancer"
 	 			  13 "Nervous System & Cognition"
 	 			  1  "Cardiovascular"
-	 			  16 "Respiratory"
+	 			  15 "Respiratory"
 	 			  9  "Immune System"
-	 			  14 "Nutrition"
-				  18 "Infectious Diseases"
+				  17 "Infectious Diseases"
 	 			  3  "Digestive"
 	 			  4  "Endocrine"
 	 			  7  "Female Urogential & Pregnancy"
 	 			  11 "Musculoskeletal"
-	 			  17 "Skin & Connective Tissue"
+	 			  16 "Skin & Connective Tissue"
 	 			  10 "Male Urogenital"
 	 			  8  "Hemic & Lymphomatic"
 				  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
@@ -205,30 +201,27 @@ else keep if inrange(year, 1992, 2018)
 	   (line sh_of_total year if nih == 1 & disease_area == "male", lc(blue) lp(_))
 	   (line sh_of_total year if nih == 1 & disease_area == "muscle", lc(gold) lp(-)) /* 11 */
 	   (line sh_of_total year if nih == 1 & disease_area == "neoplasms", lc(orange) lp(.))
-	   (line sh_of_total year if nih == 1 & disease_area == "nervous", lc(lavender) lp(_))
-	   (line sh_of_total year if nih == 1 & disease_area == "nutrition", lc(lime) lp(_))
 	   (line sh_of_total year if nih == 1 & disease_area == "psych", lc(purple) lp(-))
-	   (line sh_of_total year if nih == 1 & disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
-	   (line sh_of_total year if nih == 1 & disease_area == "skin", lc(magenta) lp(_..))
+	   (line sh_of_total year if nih == 1 & disease_area == "respiratory", lc(navy) lp(_))
+	   (line sh_of_total year if nih == 1 & disease_area == "skin", lc(magenta) lp(_..)) /* 16 */
 	   (line sh_of_total year if nih == 1 & disease_area == "infectiousdiseases", lc(red) lp(.)),
-	 legend(order(15 "Psychiatry & Psychology"
+	 legend(order(14 "Psychiatry & Psychology"
 				  12 "Cancer"
 	 			  13 "Nervous System & Cognition"
 	 			  1  "Cardiovascular"
 	 			  9  "Immune System"
-	 			  14 "Nutrition"
-	 			  16 "Respiratory"
+	 			  15 "Respiratory"
 	 			  7  "Female Urogential & Pregnancy"
 	 			  3  "Digestive"
 	 			  4  "Endocrine"
-	 			  17 "Skin & Connective Tissue"
+	 			  16 "Skin & Connective Tissue"
 	 			  11 "Musculoskeletal"
 	 			  10 "Male Urogenital"
 	 			  8  "Hemic & Lymphomatic"
 	 			  6  "Eye"
 				  5  "ENT & Mouth"
 	 			  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
-	 			  18 "Infectious Diseases") c(1) pos(3))
+	 			  17 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of `yvar' (%)") title("NIH-Funded");
 
 	 graph export "pubmed_results_nih_notwtd`all_ct'_1980-2018.png", replace as(png) wid(1600) hei(700);
@@ -340,29 +333,27 @@ keep if inrange(year, 2005, 2018)
 		   (line sh_of_total year if disease_area == "muscle", lc(gold) lp(-)) /* 11 */
 		   (line sh_of_total year if disease_area == "neoplasms", lc(orange) lp(.))
 		   (line sh_of_total year if disease_area == "nervous", lc(lavender) lp(_))
-		   (line sh_of_total year if disease_area == "nutrition", lc(lime) lp(_))
 		   (line sh_of_total year if disease_area == "psych", lc(purple) lp(-))
-		   (line sh_of_total year if disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
-		   (line sh_of_total year if disease_area == "skin", lc(magenta) lp(_..))
+		   (line sh_of_total year if disease_area == "respiratory", lc(navy) lp(_))
+		   (line sh_of_total year if disease_area == "skin", lc(magenta) lp(_..)) /* 16 */
 		   (line sh_of_total year if disease_area == "infectiousdiseases", lc(red) lp(.)),
-		 legend(order(15 "Psychiatry & Psychology"
+		 legend(order(14 "Psychiatry & Psychology"
 					  1  "Cardiovascular"
 		 			  12 "Cancer"
 		 			  13 "Nervous System & Cognition"
-		 			  16 "Respiratory"
+		 			  15 "Respiratory"
 		 			  9  "Immune System"
-		 			  14 "Nutrition"
 		 			  7  "Female Urogential & Pregnancy"
 		 			  11 "Musculoskeletal"
 		 			  3  "Digestive"
-		 			  17 "Skin & Connective Tissue"
+		 			  16 "Skin & Connective Tissue"
 		 			  10 "Male Urogenital"
 		 			  8  "Hemic & Lymphomatic"
 		 			  4  "Endocrine"
 		 			  5  "ENT & Mouth"
 		 			  6  "Eye"
 					  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
-					  18 "Infectious Diseases") c(1) pos(3))
+					  17 "Infectious Diseases") c(1) pos(3))
 		 yti("Share of Publications (%)") title("All Funding Types");
 
 		 graph export "pubmed_results_all_notwtd`all_ct'_2005-2018.png", replace as(png) wid(1600) hei(700);
@@ -385,29 +376,27 @@ keep if inrange(year, 2005, 2018)
 	   (line sh_of_total year if funding == 1 & disease_area == "muscle", lc(gold) lp(-)) /* 11 */
 	   (line sh_of_total year if funding == 1 & disease_area == "neoplasms", lc(orange) lp(.))
 	   (line sh_of_total year if funding == 1 & disease_area == "nervous", lc(lavender) lp(_))
-	   (line sh_of_total year if funding == 1 & disease_area == "nutrition", lc(lime) lp(_))
 	   (line sh_of_total year if funding == 1 & disease_area == "psych", lc(purple) lp(-))
-	   (line sh_of_total year if funding == 1 & disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
-	   (line sh_of_total year if funding == 1 & disease_area == "skin", lc(magenta) lp(_..))
+	   (line sh_of_total year if funding == 1 & disease_area == "respiratory", lc(navy) lp(_)) 
+	   (line sh_of_total year if funding == 1 & disease_area == "skin", lc(magenta) lp(_..)) /* 16 */
 	   (line sh_of_total year if funding == 1 & disease_area == "infectiousdiseases", lc(red) lp(.)),
-	 legend(order(15 "Psychiatry & Psychology"
+	 legend(order(14 "Psychiatry & Psychology"
 				  1  "Cardiovascular"
 	 			  12 "Cancer"
 	 			  13 "Nervous System & Cognition"
-	 			  16 "Respiratory"
+	 			  15 "Respiratory"
 	 			  9  "Immune System"
-	 			  14 "Nutrition"
 	 			  7  "Female Urogential & Pregnancy"
 	 			  11 "Musculoskeletal"
 	 			  3  "Digestive"
-	 			  17 "Skin & Connective Tissue"
+	 			  16 "Skin & Connective Tissue"
 	 			  10 "Male Urogenital"
 	 			  8  "Hemic & Lymphomatic"
 	 			  4  "Endocrine"
 	 			  5  "ENT & Mouth"
 	 			  6  "Eye"
 				  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
-				  18 "Infectious Diseases") c(1) pos(3))
+				  17 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of Publications (%)") title("NIH Funded");
 
 	 graph export "pubmed_results_nih_notwtd`all_ct'_2005-2018.png", replace as(png) wid(1600) hei(700);
@@ -428,29 +417,27 @@ keep if inrange(year, 2005, 2018)
 	   (line sh_of_total year if funding == 2 & disease_area == "muscle", lc(gold) lp(-)) /* 11 */
 	   (line sh_of_total year if funding == 2 & disease_area == "neoplasms", lc(orange) lp(.))
 	   (line sh_of_total year if funding == 2 & disease_area == "nervous", lc(lavender) lp(_))
-	   (line sh_of_total year if funding == 2 & disease_area == "nutrition", lc(lime) lp(_))
 	   (line sh_of_total year if funding == 2 & disease_area == "psych", lc(purple) lp(-))
-	   (line sh_of_total year if funding == 2 & disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
-	   (line sh_of_total year if funding == 2 & disease_area == "skin", lc(magenta) lp(_..))
+	   (line sh_of_total year if funding == 2 & disease_area == "respiratory", lc(navy) lp(_))
+	   (line sh_of_total year if funding == 2 & disease_area == "skin", lc(magenta) lp(_..)) /* 16 */
 	   (line sh_of_total year if funding == 2 & disease_area == "infectiousdiseases", lc(red) lp(.)),
-	 legend(order(15 "Psychiatry & Psychology"
+	 legend(order(14 "Psychiatry & Psychology"
 				  12 "Cancer"
 	 			  13 "Nervous System & Cognition"
 	 			  1  "Cardiovascular"
 	 			  9  "Immune System"
-	 			  14 "Nutrition"
-	 			  16 "Respiratory"
+	 			  15 "Respiratory"
 	 			  7  "Female Urogential & Pregnancy"
 	 			  3  "Digestive"
 	 			  4  "Endocrine"
-	 			  17 "Skin & Connective Tissue"
+	 			  16 "Skin & Connective Tissue"
 	 			  11 "Musculoskeletal"
 	 			  10 "Male Urogenital"
 	 			  8  "Hemic & Lymphomatic"
 	 			  6  "Eye"
 				  5  "ENT & Mouth"
 	 			  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
-	 			  18 "Infectious Diseases") c(1) pos(3))
+	 			  17 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of Publications (%)") title("Gov't Non-NIH Funded");
 
 	 graph export "pubmed_results_public_notwtd`all_ct'_2005-2018.png", replace as(png) wid(1600) hei(700);
@@ -471,29 +458,27 @@ keep if inrange(year, 2005, 2018)
 	   (line sh_of_total year if funding == 3 & disease_area == "muscle", lc(gold) lp(-)) /* 11 */
 	   (line sh_of_total year if funding == 3 & disease_area == "neoplasms", lc(orange) lp(.))
 	   (line sh_of_total year if funding == 3 & disease_area == "nervous", lc(lavender) lp(_))
-	   (line sh_of_total year if funding == 3 & disease_area == "nutrition", lc(lime) lp(_))
 	   (line sh_of_total year if funding == 3 & disease_area == "psych", lc(purple) lp(-))
-	   (line sh_of_total year if funding == 3 & disease_area == "respiratory", lc(navy) lp(_)) /* 16 */
-	   (line sh_of_total year if funding == 3 & disease_area == "skin", lc(magenta) lp(_..))
+	   (line sh_of_total year if funding == 3 & disease_area == "respiratory", lc(navy) lp(_)) 
+	   (line sh_of_total year if funding == 3 & disease_area == "skin", lc(magenta) lp(_..)) /* 16 */
 	   (line sh_of_total year if funding == 3 & disease_area == "infectiousdiseases", lc(red) lp(.)),
-	 legend(order(15 "Psychiatry & Psychology"
+	 legend(order(14 "Psychiatry & Psychology"
 				  12 "Cancer"
 	 			  13 "Nervous System & Cognition"
 	 			  1  "Cardiovascular"
 	 			  9  "Immune System"
-	 			  14 "Nutrition"
-	 			  16 "Respiratory"
+	 			  15 "Respiratory"
 	 			  7  "Female Urogential & Pregnancy"
 	 			  3  "Digestive"
 	 			  4  "Endocrine"
-	 			  17 "Skin & Connective Tissue"
+	 			  16 "Skin & Connective Tissue"
 	 			  11 "Musculoskeletal"
 	 			  10 "Male Urogenital"
 	 			  8  "Hemic & Lymphomatic"
 	 			  6  "Eye"
 				  5  "ENT & Mouth"
 	 			  /*2  "Chemically-Induced" - Silenced because no longer included in the queries*/
-	 			  18 "Infectious Diseases") c(1) pos(3))
+	 			  17 "Infectious Diseases") c(1) pos(3))
 	 yti("Share of Publications (%)") title("Privately Funded");
 
 	 graph export "pubmed_results_private_notwtd`all_ct'_2005-2018.png", replace as(png) wid(1600) hei(700);
