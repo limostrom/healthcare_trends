@@ -31,7 +31,7 @@ api_parse = function(query){
 start_year = 2005
 
 # set to econ or diseases:
-group_term = "diseases_clintr"
+group_term = "GBDlev2_clintr"
 
 years = as.character(start_year:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
@@ -70,6 +70,16 @@ if (group_term == "diseases_clintr") {
 				as.character(start_year),
 				'.csv')
 }
+if (group_term == "diseases_BVPW") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_byBVPW_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "BVPW_ex_disease_cats") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_byBVPW_exDiseases_from',
+				as.character(start_year),
+				'.csv')
+}
 if (group_term == "econ") {
 	outfile = paste0('Amitabh/PubMed_Search_Results_MedvsEcon_from',
 				as.character(start_year),
@@ -80,6 +90,27 @@ if (group_term == "health_econ_and_policy") {
 				as.character(start_year),
 				'.csv')
 }
+if (group_term == "topGBDs") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_topGBDs_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "topGBDs_clintr") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_CT_topGBDs_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "GBDlev2") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_GBDlev2_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "GBDlev2_clintr") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_CT_GBDlev2_from',
+				as.character(start_year),
+				'.csv')
+}
+
 write_csv(data, path = outfile)
 
 
