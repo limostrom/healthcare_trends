@@ -135,7 +135,9 @@ preserve
 	collapse (count) pubs = pmid, by(match_group year lifesci nih)
 	keep if match_group != ""
 
-	reshape wide pubs, i(year lifesci nih) j(match_group) string 
+	reshape wide pubs, i(year lifesci nih) j(match_group) string
+		sort year lifesci nih
+		export delimited "`folder'pubs`ext'_ts_byMatched.csv", replace
 	gen pubsOtherMSA_adj = pubsOtherMSA + pubsTopMSA
 	gen pubsNotMatched_adj = pubsNotMatched + pubsOtherMSA + pubsTopMSA
 
