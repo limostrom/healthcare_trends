@@ -9,7 +9,7 @@ clear all
 set more off
 pause on
 
-local diseases_1980 1
+local diseases_1980 0
 local diseases_2005 0
 local diseases_hhi 0
 local BVPW_1980 0
@@ -21,6 +21,8 @@ local topGBDs_hhi 0
 local econ_1980 0
 local econ_2005 0
 local health_econ_1980 0
+local all_1980 1
+local all_2005 1
 
 *=======================================================================
 *					DISEASE CATEGORIES (BODY SYSTEMS)
@@ -1108,3 +1110,120 @@ foreach field in "hceo" "econsub" "legsub" {
 *-------------------
 }
 *-------------------
+
+*-------------------------
+if `all_1980' == 1 {
+*-------------------------
+cap cd "C:\Users\lmostrom\Documents\Amitabh\"
+
+import delimited "PubMed_Search_Results_all_from1980.csv", varn(1) clear
+
+split query_name, p("_")
+
+gen QA = substr(query_name1, -2, 2) == "QA"
+	drop query_name query_name1
+
+ren pub_count pubs_
+replace query_name2 = "All" if query_name2 == ""
+reshape wide pubs_, i(QA year) j(query_name2) string
+
+order QA year pubs_NIH pubs_notNIH pubs_All
+
+foreach var of varlist pubs_NIH pubs_notNIH {
+		gen sh_`var' = `var'/pubs_All
+}
+
+export delimited "all_pubs_by_funding_from1980.csv", replace
+
+* Plots for # of pubs and share of all pubs
+#delimit ;
+tw (line pubs_NIH year if !QA, lc(red))
+   (line pubs_notNIH year if !QA, lc(blue)),
+ legend(order( 1 "Received NIH Funding" 2 "Did Not Receive NIH Funding") r(1))
+ yti("Number of PubMed Publications") xti("Year")
+ subti("All Journals");
+graph export "all_pubs_by_funding_notQA_from1980.png", replace as(png) wid(1200) hei(700);
+
+tw (line pubs_NIH year if QA, lc(red))
+   (line pubs_notNIH year if QA, lc(blue)),
+ legend(order( 1 "Received NIH Funding" 2 "Did Not Receive NIH Funding") r(1))
+ yti("Number of PubMed Publications") xti("Year")
+ subti("Top 13 Journals");
+graph export "all_pubs_by_funding_QA_from1980.png", replace as(png) wid(1200) hei(700);
+
+tw (line sh_pubs_NIH year if !QA, lc(red))
+   (line sh_pubs_notNIH year if !QA, lc(blue)),
+ legend(order( 1 "Received NIH Funding" 2 "Did Not Receive NIH Funding") r(1))
+ yti("Share of all Publications (%)") xti("Year")
+ subti("All Journals");
+graph export "all_pubs_sh_by_funding_notQA_from1980.png", replace as(png) wid(1200) hei(700);
+
+tw (line sh_pubs_NIH year if QA, lc(red))
+   (line sh_pubs_notNIH year if QA, lc(blue)),
+ legend(order( 1 "Received NIH Funding" 2 "Did Not Receive NIH Funding") r(1))
+ yti("Share of all Publications (%)") xti("Year")
+ subti("Top 13 Journals");
+graph export "all_pubs_sh_by_funding_QA_from1980.png", replace as(png) wid(1200) hei(700);
+#delimit cr
+*-------------------------
+}
+*-------------------------
+
+*-------------------------
+if `all_2005' == 1 {
+*-------------------------
+cap cd "C:\Users\lmostrom\Documents\Amitabh\"
+
+import delimited "PubMed_Search_Results_all_from2005.csv", varn(1) clear
+
+split query_name, p("_")
+
+gen QA = substr(query_name1, -2, 2) == "QA"
+	drop query_name query_name1
+
+ren pub_count pubs_
+replace query_name2 = "All" if query_name2 == ""
+reshape wide pubs_, i(QA year) j(query_name2) string
+
+order QA year pubs_NIH pubs_Priv pubs_Pub pubs_All
+
+foreach var of varlist pubs_NIH pubs_Priv pubs_Pub {
+		gen sh_`var' = `var'/pubs_All
+}
+
+export delimited "all_pubs_by_funding_from2005.csv", replace
+
+* Plots for # of pubs and share of all pubs
+#delimit ;
+tw (line pubs_NIH year if !QA, lc(red))
+   (line pubs_Priv year if !QA, lc(green)),
+ legend(order( 1 "Received NIH Funding" 2 "Exclusively Private Funding") r(1))
+ yti("Number of PubMed Publications") xti("Year")
+ subti("All Journals");
+graph export "all_pubs_by_funding_notQA.png", replace as(png) wid(1200) hei(700);
+
+tw (line pubs_NIH year if QA, lc(red))
+   (line pubs_Priv year if QA, lc(green)),
+ legend(order( 1 "Received NIH Funding" 2 "Exclusively Private Funding") r(1))
+ yti("Number of PubMed Publications") xti("Year")
+ subti("Top 13 Journals");
+graph export "all_pubs_by_funding_QA.png", replace as(png) wid(1200) hei(700);
+
+tw (line sh_pubs_NIH year if !QA, lc(red))
+   (line sh_pubs_Priv year if !QA, lc(green)),
+ legend(order( 1 "Received NIH Funding" 2 "Exclusively Private Funding") r(1))
+ yti("Share of all Publications (%)") xti("Year")
+ subti("All Journals");
+graph export "all_pubs_sh_by_funding_notQA.png", replace as(png) wid(1200) hei(700);
+
+tw (line sh_pubs_NIH year if QA, lc(red))
+   (line sh_pubs_Priv year if QA, lc(green)),
+ legend(order( 1 "Received NIH Funding" 2 "Exclusively Private Funding") r(1))
+ yti("Share of all Publications (%)") xti("Year")
+ subti("Top 13 Journals");
+graph export "all_pubs_sh_by_funding_QA.png", replace as(png) wid(1200) hei(700);
+#delimit cr
+
+*-------------------------
+}
+*-------------------------
