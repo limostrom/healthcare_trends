@@ -28,10 +28,10 @@ api_parse = function(query){
 }
 
 ## --------------------------------------------------------------------
-start_year = 2005
+start_year = 1980
 
 # set to econ or diseases:
-group_term = "GBDlev2_clintr"
+group_term = "all"
 
 years = as.character(start_year:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
@@ -42,13 +42,22 @@ infile = paste0('GitHub/healthcare_trends/search_terms_',
 			as.character(start_year),
 			'.txt')
 queries_sub = read_tsv(file = infile)
+	if (group_term == "all") {
+		if (start_year == 1980) {queries_sub[6,2] = " "}
+		if (start_year == 2005) {queries_sub[8,2] = " "}
+	}
 queries = rep(queries_sub$Query, each=length(year_queries))
 query_names = rep(queries_sub$Query_Name, each=length(year_queries))
 
 Q = data.frame(Query = queries, Query_Name = query_names)
 
 Q$Query = rep(queries_sub$Query, each=length(year_queries))
-Q$Query = paste0(Q$Query,' AND ',year_queries)
+if (group_term == "all") {
+	Q$Query = paste0(year_queries, ' ', Q$Query)
+}
+if (group_term != "all") {
+	Q$Query = paste0(Q$Query,' AND ',year_queries)
+}
 
 pub_counts = sapply(X = Q$Query, FUN = api_parse)
 
@@ -110,8 +119,12 @@ if (group_term == "GBDlev2_clintr") {
 				as.character(start_year),
 				'.csv')
 }
+if (group_term == "all") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_all_from',
+				as.character(start_year),
+				'.csv')
+}
 
 write_csv(data, path = outfile)
-
 
 
