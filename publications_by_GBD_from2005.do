@@ -9,11 +9,11 @@ pause on
 
 local plot 1
 	local ex_cancer 1 // run plots excluding cancer (and cardiovascular diseases, for papers only)
-	local log_plot 0 // plot on log-log axes
+	local log_plot 1 // plot on log-log axes
 	local lags = 0 // set to 0 for no lag on GBD, 2 for 2-year lag on GBD, etc.
-	local leads = 2 // set to 0 for no lag on Publications, 2 for 2-year lag on Publications, etc.
+	local leads = 0 // set to 0 for no lag on Publications, 2 for 2-year lag on Publications, etc.
 	local deltas = 0 // set to 0 for levels, 2 for 2-year change, etc.
-local combine 0
+local combine 1
 
 global repo "C:\Users\lmostrom\Documents\GitHub\healthcare_trends\"
 
@@ -38,15 +38,8 @@ foreach pub_ct in "" "CT_" {
 	tempfile pubmed
 	save `pubmed', replace
 	*================================================================================
-	import delimited "IHME_GBD_highSDI_lev2\IHME-GBD_2017_DATA-b793d0ef-2.csv", ///
+	import delimited "IHME_GBD_highlowSDI_lev2\IHME-GBD_2017_DATA-7b7a6e96-1.csv", ///
 		varn(1) clear
-	tempfile pg2
-	save `pg2', replace
-
-	import delimited "IHME_GBD_highSDI_lev2\IHME-GBD_2017_DATA-b793d0ef-1.csv", ///
-		varn(1) clear
-
-	append using `pg2'
 
 	save "IHME_GBD_2017_level2.dta", replace
 	*================================================================================
@@ -75,8 +68,8 @@ foreach pub_ct in "" "CT_" {
 		drop if cause_abbr == ""
 
 	cap mkdir "GBD_Plots_from2005"
-	if "`pub_ct'" == "" local yvar "Publications"
-	else local yvar "Clinical Trials"
+	if "`pub_ct'" == "" local yvar "Non-Trial Publications"
+	else local yvar "Clinical Trials (Phase II & III)"
 
 	egen cause_cat = group(cause_abbr measure_id location_id sex_id metric_id)
 	xtset cause_cat year
@@ -85,31 +78,32 @@ foreach pub_ct in "" "CT_" {
 		gen ln_pubs_nih0 = log10(pubs_nih0)
 		gen ln_pubs_nih1 = log10(pubs_nih1)
 		gen ln_val = log10(val)
-		local mid_folder "loglog/"
+		local mid_folder "loglog"
 	} // ----------------------------------------------------------------------------
 
 	if `lags' > 0 { // --------------------------------------------------------------
 		gen L`lags'_val = l`lags'.val
-		local mid_folder "L`lags'/"
+		local mid_folder "L`lags'"
 	} // ----------------------------------------------------------------------------
 
 	if `leads' > 0 { // --------------------------------------------------------------
 		gen L`leads'_pubs_nih0 = l`leads'.pubs_nih0
 		gen L`leads'_pubs_nih1 = l`leads'.pubs_nih1
-		local mid_folder "L`lags'/"
+		local mid_folder "L`lags'"
 	} // ----------------------------------------------------------------------------
 
 	if `deltas' > 0 { // ------------------------------------------------------------
 		gen d`deltas'_pubs_nih0 = pubs_nih0 - l`deltas'.pubs_nih0
 		gen d`deltas'_pubs_nih1 = pubs_nih1 - l`deltas'.pubs_nih1
 		gen d`deltas'_val = val - l`deltas'.val
-		local mid_folder "d`deltas'/"
+		local mid_folder "d`deltas'"
 	} // ----------------------------------------------------------------------------
 
 	if `lags' + `leads' + `deltas' + `log_plot' == 0 local mid_folder ""
 
 	foreach measure in "YLLs (Years of Life Lost)" "DALYs (Disability-Adjusted Life Years)" {
-		foreach loc in "United States" "High SDI" {
+			loca measure_sub = substr("`measure'", 1, 5)
+		foreach loc in "United States" "High SDI" "Low SDI" {
 			foreach sex in "Both" "Female" "Male" {
 				foreach metric in "Number" /*"Percent" "Rate"*/ {
 				forval yr = 2007(5)2017 {
@@ -119,8 +113,28 @@ foreach pub_ct in "" "CT_" {
 							if "`pub_ct'" == "" local excl_folder "excl_Neoplasms_and_Cardiovasc/"
 							if "`pub_ct'" == "CT_" local excl_folder "excl_Neoplasms/"
 						} // ------------------------------------------------------------------------
-						cap mkdir "GBD_Plots_from2005/`yr'/`mid_folder'/`excl_folder'"
 
+						if `log_plot' == 1 { // -----------------------------------------------------
+							if "`pub_ct'" == "" {
+								if `ex_cancer' == 1 local yticks "200(300)500"
+								if `ex_cancer' == 0 local yticks "500(500)1000"
+							}
+							if "`pub_ct'" == "CT_" {
+								if `ex_cancer' == 1 local yticks "100(200)300"
+								if `ex_cancer' == 0 local yticks "500(1000)1500"
+							}
+							if substr("`measure'", 1, 3) == "YLL" & "`loc'" == "Low SDI" ///
+								local xticks "10000000(35000000)80000000"
+							else local xticks ""
+						} // ------------------------------------------------------------------------
+						else { // -------------------------------------------------------------------
+							local yticks "#4"
+							local xticks ""
+						} // ------------------------------------------------------------------------
+
+						cap mkdir "GBD_Plots_from2005/`yr'/`mid_folder'/`excl_folder'"
+						cap mkdir "GBD_Plots_from2005/`yr'/`mid_folder'/`excl_folder'/gphs"
+						
 					/*forval nih01 = 0/1 {
 						if `nih01' == 0 {
 							local c1 "eltblue"
@@ -143,7 +157,8 @@ foreach pub_ct in "" "CT_" {
 													& location_name == "`loc'"
 													& measure_name == "`measure'"
 													& year == `yr';
-							replace pubs_nih1 = . if `yr' == 2007 & "`pub_ct'" == "CT_" & pubs_nih1 == 0;
+							replace pubs_nih1 = . if `log_plot' == 1 & "`pub_ct'" == "CT_" & pubs_nih1 == 0;
+							replace pubs_nih0 = . if `log_plot' == 1 & "`pub_ct'" == "CT_" & pubs_nih0 == 0;
 
 						if `ex_cancer' == 1 {; // ------------------------------------------------;
 							if "`pub_ct'" == "" local if_st if !inlist(cause_abbr, "neoplasms", "cardio");
@@ -247,12 +262,14 @@ foreach pub_ct in "" "CT_" {
 								lc(green) `log_axes' /*yaxis(1)*/)
 							(line pred_nih1 `xvar' `if_st',
 								lc(red) `log_axes' /*yaxis(2)*/),
-						  legend(order(1 "Industry" 2 "NIH" /*3 "Non-NIH, 2017"
+						  legend(order(1 "Exclusively Private" 2 "Public Presence" /*3 "Non-NIH, 2017"
 						  			   4 "NIH, 1997" 5 "NIH, 2007" 6 "NIH, 2017"*/) r(1) colfirst)
-						  xti("`measure', `metric'" "`xti_ext'") xlab(, angle(45) labs(small)) title("PubMed `yvar'")
-						  yti("`yvar'" "`yti_ext'", axis(1)) ylab(, angle(45) labs(small))
+						  xti("`measure_sub'" "`xti_ext'") xlab(`xticks', angle(45) labs(small) format(%9.0e)) title("`yvar'")
+						  yti("`yvar'" "`yti_ext' ", axis(1)) ylab(`yticks', angle(45) labs(small))
 						  		/*yti("NIH `yvar'", axis(2))*/
-						  subtitle("Country: `loc'" "Sex: `sex'" "`yr'");
+						  subtitle("Country: `loc'" /*"Sex: `sex'"*/ "`yr'");
+						graph save "GBD_Plots_from2005/`yr'/`mid_folder'/`excl_folder'/gphs/scatter_`pub_ct'`metric'-`sex'-`loc'-`measure'.gph", replace;
+
 						graph export "GBD_Plots_from2005/`yr'/`mid_folder'/`excl_folder'/scatter_`pub_ct'`metric'-`sex'-`loc'-`measure'.png",
 								as(png) replace wid(1200) hei(700);
 
@@ -264,24 +281,38 @@ foreach pub_ct in "" "CT_" {
 				} // metric loop
 			} // sex loop
 		} // location loop
+
+
 	} // measure loop
 *================================================================================
 } // loop over publications / clinical trials
 *================================================================================
 }
 
-if `combine' == 1 {
-	cd GBD_Plots
-	forval yr = 1997(10)2017 {
 
-		#delimit ;
-		grc1leg "`yr'/scatter_CT_Number-Both-High SDI-DALYs (Disability-Adjusted Life Years).png"
-				"`yr'/scatter_CT_Number-Both-United States-DALYs (Disability-Adjusted Life Years).png"
-				"`yr'/scatter_Number-Both-High SDI-DALYs (Disability-Adjusted Life Years).png"
-				"`yr'/scatter_Number-Both-United States-DALYs (Disability-Adjusted Life Years).png",
-			legendfrom("`yr'/scatter_CT_Number-Both-High SDI-DALYs (Disability-Adjusted Life Years).png")
-		#delimit cr
+	if `combine' == 1 { // -----------------------------------------------------------------------------------
+		cd GBD_Plots_from2005
+
+		if `ex_cancer' == 1 {
+			local excl_fld1 "excl_Neoplasms"
+			local excl_fld2 "excl_Neoplasms_and_Cardiovasc"
+		}
+		if `log_plot' == 1 local mid_folder "loglog"
+
+		forval yr = 2007(5)2017 {
+		foreach measure in "YLLs (Years of Life Lost)" "DALYs (Disability-Adjusted Life Years)" {
+
+			#delimit ;
+			grc1leg /*"`yr'/`mid_folder'/`excl_fld1'/gphs/scatter_CT_Number-Both-High SDI-`measure'.gph" */
+					"`yr'/`mid_folder'/`excl_fld1'/gphs/scatter_CT_Number-Both-Low SDI-`measure'.gph"
+					"`yr'/`mid_folder'/`excl_fld1'/gphs/scatter_CT_Number-Both-United States-`measure'.gph"
+					/*"`yr'/`mid_folder'/`excl_fld2'/gphs/scatter_Number-Both-High SDI-`measure'.gph"*/
+					"`yr'/`mid_folder'/`excl_fld2'/gphs/scatter_Number-Both-Low SDI-`measure'.gph"
+					"`yr'/`mid_folder'/`excl_fld2'/gphs/scatter_Number-Both-United States-`measure'.gph", r(2)
+				legendfrom("`yr'/`mid_folder'/`excl_fld1'/gphs/scatter_CT_Number-Both-Low SDI-`measure'.gph");
+			graph export "combined_`yr'_`measure'_`mid_folder'_`excl_fld1'.png", replace as(png) wid(1200) hei(700);
+			#delimit cr
+
+		} // measure loop
+		} // year loop
 	}
-
-
-}
