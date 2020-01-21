@@ -6,15 +6,18 @@ pmid_authaffl_clean.do
 */
 pause on
 
-local pmids_append 1
+local pmids_append 0
 	local subfolder "1988-2018"
 local pmids_append_2005 0
 local affls_append 0
 local hs_affls_append 0
 local ct_affls_append 0
+
+local pmids_append_master 1
+
 local affls_clean 0
-	local ext "" // set to "" for lifesci, "_hs" for health services, "_ct" for clinical trials
-local full_save 1
+	local ext "_master" // set to "" for lifesci, "_hs" for health services, "_ct" for clinical trials
+local full_save 0
 local full_save_2005 0
 
 cap cd "C:\Users\lmostrom\Documents\Amitabh\"
@@ -246,7 +249,160 @@ save "full_auth_affls_ct.dta", replace
 }
 *---------------------------
 
+*================================================================================
+* (3) Clean and append list of author affiliations & PMIDs by disease and funder
+*		for the master dataset
+*================================================================================
+if `pmids_append_master' == 1 {
+*---------------------------
+cd "C:/Users/lmostrom/Documents/Amitabh/"
+*-----* Read in list of PMIDs by disease, CT/Non-Trial Pub, and top 13 journal/all journals *-----*
+/*
+foreach ct_not in "" "clintr_" {
+	foreach QA in "" "notQA_" {
+		foreach from in "from1980" "from2005" {
+			local filelist: dir "PMIDs/master/" files "PMIDs_GBDlev2_`ct_not'`QA'`from'_*.csv"
 
+			local i = 1
+			foreach file of local filelist {
+				import delimited pmid query_name using "PMIDs/master/`file'", rowr(2:) clear
+				dis "`file'"
+				if _N > 0 {
+					if `i' == 1 {
+						tempfile full_pmids
+						save `full_pmids', replace 
+					}
+					if `i' > 1 {
+						append using `full_pmids', force
+						save `full_pmids', replace
+					}
+
+					local ++i
+				}
+			}
+
+			if _N == 0 use `full_pmids', clear
+			
+			split query_name, gen(query) p("_")
+				ren query1 dis_abbr
+				ren query2 query
+
+			gen year = substr(query, -4, 4)
+				destring year, replace
+			drop if substr(query, 1, 3) == "Pub"
+			gen nih = substr(query, 1, 3) == "NIH"
+
+			if "`from'" == "from1980" {
+				keep if year <= 2004
+				tempfile full_from1980
+				save `full_`from'', replace
+			}
+			if "`from'" == "from2005" {
+				keep if year >= 2005
+				append using `full_from1980'
+				save "Master_dta/pmids_`ct_not'`QA'bydisease.dta", replace
+			}	
+		}
+	}
+}
+*/
+
+*-----* Read in list of PMIDs by disease, CT/Non-Trial Pub, and top 13 journal/all journals *-----*
+foreach from in "1980" "2005" {
+	local filelist: dir "PMIDs/PieCharts/" files "PMIDs_`from'_*.csv"
+
+	local i = 1
+	foreach file of local filelist {
+		import delimited pmid query_name using "PMIDs/PieCharts/`file'", rowr(2:) clear
+		dis "`file'"
+		if _N > 0 {
+			if `i' == 1 {
+				tempfile full_pmids
+				save `full_pmids', replace 
+			}
+			if `i' > 1 {
+				append using `full_pmids', force
+				save `full_pmids', replace
+			}
+
+			local ++i
+		}
+	}
+
+	if _N == 0 use `full_pmids', clear
+	
+	split query_name, gen(query) p("_")
+		ren query1 discipline
+		ren query2 query
+
+	gen year = substr(query, -4, 4)
+		destring year, replace
+	gen nih = substr(query, 1, 3) == "NIH"
+
+	if "`from'" == "1980" {
+		keep if year <= 2004
+		tempfile full_from1980
+		save `full_from1980', replace
+	}
+	if "`from'" == "2005" {
+		keep if year >= 2005
+		append using `full_from1980'
+		save "Master_dta/pmids_bydiscipline.dta", replace
+	}	
+}
+
+*-----* Read in scraped dates, journals, pub types, grant codes, and author affiliations *-----*
+/*
+local filelist: dir "Master_dta/" files "raw_*.csv"
+
+local i = 1
+foreach file of local filelist {
+	import delimited "Master_dta/`file'", clear varn(1)
+	tostring pmid, replace
+
+	if `i' == 1 {
+		tempfile full_pmids
+		save `full_pmids', replace 
+	}
+	if `i' > 1 {
+		append using `full_pmids'
+		save `full_pmids', replace
+	}
+
+	local ++i
+}
+
+duplicates drop
+drop if pmid == "NA"
+
+save "Master_dta/raw_samp1pct.dta", replace
+
+keep pmid affil
+	ren affil affl_raw
+	gen affl = subinstr(affl_raw, "&amp;", "and", .)
+	drop if affl_raw == "NA"
+	drop if substr(affl_raw, 2, .) == "<AffiliationInfo>"
+	* Drop affiliations of authors after the first author
+	gen pos_2nd_auth = strpos(affl, "[2]")
+	replace pos_2nd_auth = strpos(affl, ");") + 2 ///
+			if pos_2nd_auth == 0 & strpos(affl, ");") > 0 // ; after initials in parentheses
+	replace pos_2nd_auth = strpos(affl, "USA") + 3 ///
+			if pos_2nd_auth == 0 & strpos(affl, "USA") > 0
+
+	replace affl = substr(affl, 1, pos_2nd_auth) if pos_2nd_auth > 0
+
+	destring pmid, replace force
+		assert pmid != .
+
+save "full_auth_affls`ext'.dta", replace
+*/
+*---------------------------
+} // end pmids_append_master
+*---------------------------
+
+*================================================================================
+* (4) Clean cities, states, countries, etc. for merge w/ MSA codes
+*================================================================================
 *---------------------------
 if `affls_clean' == 1 {
 *---------------------------
