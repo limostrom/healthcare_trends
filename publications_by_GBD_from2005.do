@@ -69,7 +69,7 @@ foreach pub_ct in "" "CT_" {
 
 	cap mkdir "GBD_Plots_from2005"
 	if "`pub_ct'" == "" local yvar "Non-Trial Publications"
-	else local yvar "Clinical Trials (Phase II & III)"
+	else local yvar "Clinical Trial (II & III) Publications"
 
 	egen cause_cat = group(cause_abbr measure_id location_id sex_id metric_id)
 	xtset cause_cat year
@@ -101,8 +101,10 @@ foreach pub_ct in "" "CT_" {
 
 	if `lags' + `leads' + `deltas' + `log_plot' == 0 local mid_folder ""
 
+	gen val_MM = val/1000000
+
 	foreach measure in "YLLs (Years of Life Lost)" "DALYs (Disability-Adjusted Life Years)" {
-			loca measure_sub = substr("`measure'", 1, 5)
+			local measure_sub = substr("`measure'", 1, 5)
 		foreach loc in "United States" "High SDI" "Low SDI" {
 			foreach sex in "Both" "Female" "Male" {
 				foreach metric in "Number" /*"Percent" "Rate"*/ {
@@ -116,15 +118,15 @@ foreach pub_ct in "" "CT_" {
 
 						if `log_plot' == 1 { // -----------------------------------------------------
 							if "`pub_ct'" == "" {
-								if `ex_cancer' == 1 local yticks "200(300)500"
-								if `ex_cancer' == 0 local yticks "500(500)1000"
+								if `ex_cancer' == 1 local yticks "100(200)500"
+								if `ex_cancer' == 0 local yticks "100(600)700"
 							}
 							if "`pub_ct'" == "CT_" {
-								if `ex_cancer' == 1 local yticks "100(200)300"
-								if `ex_cancer' == 0 local yticks "500(1000)1500"
+								if `ex_cancer' == 1 local yticks "50(200)250"
+								if `ex_cancer' == 0 local yticks "100(900)1000"
 							}
 							if substr("`measure'", 1, 3) == "YLL" & "`loc'" == "Low SDI" ///
-								local xticks "10000000(35000000)80000000"
+								local xticks "20(60)80"
 							else local xticks ""
 						} // ------------------------------------------------------------------------
 						else { // -------------------------------------------------------------------
@@ -174,7 +176,7 @@ foreach pub_ct in "" "CT_" {
 									gen pred_nih1 = 10^reg_nih1;
 
 								local pubs "pubs";
-								local xvar "val";
+								local xvar "val_MM";
 								local xti_ext "";
 								local yti_ext "";
 								local log_axes "xscale(log) yscale(log)";
@@ -226,7 +228,7 @@ foreach pub_ct in "" "CT_" {
 									predict pred_nih1 `if_st';
 
 								local pubs "pubs";
-								local xvar "val";
+								local xvar "val_MM";
 								local xti_ext "";
 								local yti_ext "";
 								local log_axes "";
@@ -262,9 +264,9 @@ foreach pub_ct in "" "CT_" {
 								lc(green) `log_axes' /*yaxis(1)*/)
 							(line pred_nih1 `xvar' `if_st',
 								lc(red) `log_axes' /*yaxis(2)*/),
-						  legend(order(1 "Exclusively Private" 2 "Public Presence" /*3 "Non-NIH, 2017"
+						  legend(order(2 "NIH Presence" 1 "No Public Presence" /*3 "Non-NIH, 2017"
 						  			   4 "NIH, 1997" 5 "NIH, 2007" 6 "NIH, 2017"*/) r(1) colfirst)
-						  xti("`measure_sub'" "`xti_ext'") xlab(`xticks', angle(45) labs(small) format(%9.0e)) title("`yvar'")
+						  xti("`measure_sub'" "(in Millions)" "`xti_ext'") xlab(`xticks', labs(small) /* angle(45) format(%9.0e)*/) title("`yvar'")
 						  yti("`yvar'" "`yti_ext' ", axis(1)) ylab(`yticks', angle(45) labs(small))
 						  		/*yti("NIH `yvar'", axis(2))*/
 						  subtitle("Country: `loc'" /*"Sex: `sex'"*/ "`yr'");
