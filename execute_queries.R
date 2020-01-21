@@ -31,7 +31,7 @@ api_parse = function(query){
 start_year = 1980
 
 # set to econ or diseases:
-group_term = "all"
+group_term = "piecharts"
 
 years = as.character(start_year:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
@@ -52,7 +52,7 @@ query_names = rep(queries_sub$Query_Name, each=length(year_queries))
 Q = data.frame(Query = queries, Query_Name = query_names)
 
 Q$Query = rep(queries_sub$Query, each=length(year_queries))
-if (group_term == "all") {
+if (group_term == "all" | group_term == "piecharts_notQA") {
 	Q$Query = paste0(year_queries, ' ', Q$Query)
 }
 if (group_term != "all") {
@@ -114,13 +114,33 @@ if (group_term == "GBDlev2") {
 				as.character(start_year),
 				'.csv')
 }
+if (group_term == "GBDlev2_notQA") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_GBDlev2_notQA_from',
+				as.character(start_year),
+				'.csv')
+}
 if (group_term == "GBDlev2_clintr") {
 	outfile = paste0('Amitabh/PubMed_Search_Results_CT_GBDlev2_from',
 				as.character(start_year),
 				'.csv')
 }
+if (group_term == "GBDlev2_clintr_notQA") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_CT_GBDlev2_notQA_from',
+				as.character(start_year),
+				'.csv')
+}
 if (group_term == "all") {
 	outfile = paste0('Amitabh/PubMed_Search_Results_all_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "piecharts") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_forPies_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "piecharts_notQA") {
+	outfile = paste0('Amitabh/PubMed_Search_Results_forPies_notQA_from',
 				as.character(start_year),
 				'.csv')
 }
