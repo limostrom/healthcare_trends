@@ -9,9 +9,8 @@ api_parse = function(query){
   # Form URL using the term
   url = paste0('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=',
                 search,
-                '&tool=my_tool&email=my_email@example.com',
-		    '&api_key=ae06e6619c472ede6b6d4ac4b5eadecdb209'
-  )
+                '&tool=my_tool&email=my_email@example.com')
+  # '&api_key=ae06e6619c472ede6b6d4ac4b5eadecdb209'
 
   # Query PubMed and save result
   xml = read_xml(url)
@@ -21,7 +20,7 @@ api_parse = function(query){
     xml_node('Count') %>% 
     xml_double() 
 
-  Sys.sleep(runif(1,0.4,0.6))
+  Sys.sleep(runif(1,0.6,0.8))
   
   return(pub_count)
   
@@ -31,7 +30,7 @@ api_parse = function(query){
 start_year = 1980
 
 # set to econ or diseases:
-group_term = "piecharts"
+group_term = "GBDlev2"
 
 years = as.character(start_year:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
