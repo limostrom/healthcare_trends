@@ -21,7 +21,7 @@ local full_save 0
 local full_save_2005 0
 
 cap cd "C:\Users\lmostrom\Documents\Amitabh\"
-global repo "../GitHub/healthcare_trends/"
+global repo "C:/Users/lmostrom/Documents/GitHub/healthcare_trends/"
 
 *================================================================================
 * (1) Append all PMIDs lists with the queries they came from
@@ -255,7 +255,7 @@ save "full_auth_affls_ct.dta", replace
 *================================================================================
 if `pmids_append_master' == 1 {
 *---------------------------
-cd "C:/Users/lmostrom/Documents/Amitabh/"
+cd "C:/Users/lmostrom/Dropbox/Amitabh/"
 *-----* Read in list of PMIDs by disease, CT/Non-Trial Pub, and top 13 journal/all journals *-----*
 /*
 foreach ct_not in "" "clintr_" {
@@ -305,7 +305,7 @@ foreach ct_not in "" "clintr_" {
 		}
 	}
 }
-*/
+
 
 *-----* Read in list of PMIDs by disease, CT/Non-Trial Pub, and top 13 journal/all journals *-----*
 foreach from in "1980" "2005" {
@@ -349,6 +349,42 @@ foreach from in "1980" "2005" {
 		append using `full_from1980'
 		save "Master_dta/pmids_bydiscipline.dta", replace
 	}	
+}
+*/
+*-----* Read in list of PMIDs by secondary categories (Pharma, Chem, Cells, Pharmacology, Phenomena) *-----*
+*		these are for the pie charts by disease of additional MeSH categories
+foreach sub in /*""*/ "_sub" /*"_notmaj"*/ {
+	local filelist: dir "PMIDs/PieCharts/" files "PMIDs_dis`sub'_pies_*.csv"
+
+	local i = 1
+	foreach file of local filelist {
+		import delimited pmid query_name using "PMIDs/PieCharts/`file'", rowr(2:) clear
+		dis "`file'"
+		destring pmid, replace force
+		if _N > 0 {
+			if `i' == 1 {
+				tempfile full_pmids
+				save `full_pmids', replace 
+			}
+			if `i' > 1 {
+				append using `full_pmids'
+				save `full_pmids', replace
+			}
+
+			local ++i
+		}
+	}
+
+	if _N == 0 use `full_pmids', clear
+	
+	gen year = substr(query, -4, 4)
+		destring year, replace
+
+	gen len = strlen(query) - 4
+		replace query = substr(query, 1, len)
+		drop len
+
+	save "Master_dta/pmids_by`sub'2ndcat.dta", replace
 }
 
 *-----* Read in scraped dates, journals, pub types, grant codes, and author affiliations *-----*

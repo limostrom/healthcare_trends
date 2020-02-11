@@ -24,7 +24,9 @@ local health_econ_1980 0
 local all_1980 0
 local all_2005 0
 local pies 0
-local nih_vs_priv 1
+local pies_bydisease 0
+local pies_bydisease_sub 1
+local nih_vs_priv 0
 
 *=======================================================================
 *					DISEASE CATEGORIES (BODY SYSTEMS)
@@ -1233,55 +1235,67 @@ graph export "all_pubs_sh_by_funding_QA.png", replace as(png) wid(1200) hei(700)
 *-------------------------
 if `pies' == 1 {
 *-------------------------
-cap cd "C:\Users\lmostrom\Documents\Amitabh\"
+cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
+foreach QA in "" "_notQA" {
+	import delimited "PubMed_Search_Results_forPies`QA'_from1980.csv", clear varn(1)
+		split query_name, p("_") gen(fund)
+		keep if fund1 == "Total"
+		collapse (sum) all_pubs = pub_count, by(year)
+		tempfile allpubs
+		save `allpubs', replace
 
-import delimited "all_pubs_by_funding_from1980.csv", clear varn(1)
-	keep year qa pubs_all
-	tempfile allpubs
-	save `allpubs', replace
+	import delimited "PubMed_Search_Results_forPies`QA'_from1980.csv", clear varn(1)
+		split query_name, p("_") gen(group)
+		collapse (sum) pub_count, by(group1 year)
+		ren group1 group
+			replace group = "About Diseases" if group == "Dis"
+				gen grpid = 1 if group == "About Diseases"
+			replace group = "Disease Mechanisms Only" if inlist(group, "Mech", "Mech1", "Mech2")
+				replace grpid = 6 if group == "Disease Mechanisms Only"
+			replace group = "Biological Phenomena Only" if inlist(group, "Bio", "Bio1", "Bio2")
+				replace grpid = 3 if group == "Biological Phenomena Only"
+			replace group = "Chemical Phenomena Only" if inlist(group, "Chem", "Chem1", "Chem2")
+				replace grpid = 4 if group == "Chemical Phenomena Only"
+			replace group = "Physical Phenomena Only" if inlist(group, "Phys", "Phys1", "Phys2")
+				replace grpid = 5 if group == "Physical Phenomena Only"
+			replace group = "Multiple Groups ex. Diseases" if ///
+					inlist(group, "Mult", "MandBCP1", "MandBCP2", "MandBCP3", "MandBCP4")
+				replace grpid = 2 if group == "Multiple Groups ex. Diseases"
 
-import delimited "PubMed_Search_Results_forPies_from1980.csv", clear varn(1)
-	split query_name, p("_") gen(group)
-	gen qa = group2 == "QA"
-		drop group2
-	ren group1 group
-		replace group = "About Diseases" if group == "Dis"
-			gen grpid = 1 if group == "About Diseases"
-		replace group = "Disease Mechanisms Only" if group == "Mech"
-			replace grpid = 6 if group == "Disease Mechanisms Only"
-		replace group = "Biological Phenomena Only" if group == "Bio"
-			replace grpid = 3 if group == "Biological Phenomena Only"
-		replace group = "Chemical Phenomena Only" if group == "Chem"
-			replace grpid = 4 if group == "Chemical Phenomena Only"
-		replace group = "Physical Phenomena Only" if group == "Phys"
-			replace grpid = 5 if group == "Physical Phenomena Only"
-		replace group = "Multiple Groups ex. Diseases" if group == "Mult"
-			replace grpid = 2 if group == "Multiple Groups ex. Diseases"
+		collapse (sum) pub_count, by(year group grpid)
+			bys year: egen single_cat = total(pub_count) if inlist(grpid, 3, 4, 5, 6)
+			bys year: ereplace single_cat = max(single_cat)
+			replace pub_count = pub_count - single_cat if grpid == 2
 
-merge m:1 year qa using `allpubs', nogen assert(3)
-append using `allpubs'
+	bys year: egen ingroup = total(pub_count) if group != "Total"
+		bys year: ereplace ingroup = max(ingroup)
+		replace group = "Other" if grpid == . & group == "Total"
+			replace grpid = 7 if group == "Other"
 
-bys year qa: egen ingroup = total(pub_count)
-	replace group = "Other" if pub_count == . & group == ""
-		replace grpid = 7 if group == "Other"
-	replace pub_count = pubs_all-ingroup if group == "Other"
+		replace pub_count = pub_count-ingroup if group == "Other"
 
-gen decade = 10*int(year/10)
-collapse (sum) pub_count, by(group grpid qa decade)
-forval yr = 1980(10)2010 {
-		forval QA = 0/1 {
-			if `QA' == 0 local subtitle "(All Journals)"
-			if `QA' == 1 local subtitle "(Top 13 Journals)"
-
-			graph pie pub_count if decade == `yr' & qa == `QA', sort(grpid) over(group) ///
-						plabel(1 percent, c(white)) plabel(2 percent, c(white)) ///
-						plabel(3 percent, c(white)) plabel(7 percent, c(white)) ///
-						title("Published Paper Topics in the `yr's") subtitle("`subtitle'") legend(colfirst) ///
-						pie(1, c(cranberry)) pie(2, c(purple)) pie(3, c(green)) ///
-						pie(4, c(midblue)) pie(5, c(erose)) pie(6, c(dkorange)) pie(7, c(gs8))
-			graph export "pie_chart_basic_science_`yr'_QA`QA'.png", replace as(png)
+	gen decade = 10*int(year/10)
+	collapse (sum) pub_count, by(decade group grpid)
+	forval yr = 1980(10)2010 {
+		if "`QA'" == "_notQA" {
+			local subtitle "(All Journals)"
 		}
-}
+		if "`QA'" == "" {
+			local subtitle "(Top 13 Journals)"
+		}
+
+		graph pie pub_count if decade == `yr', sort(grpid) over(group) ///
+					pl(1 percent, c(white) format(%9.3g)) ///
+					pl(2 percent, c(white) format(%9.3g) gap(med)) ///
+					pl(3 percent, c(white) format(%9.3g)) ///
+					pl(4 percent, c(white) format(%9.3g)) ///
+					pl(7 percent, c(white) format(%9.3g)) ///
+					title("Published Paper Topics in the `yr's") subtitle("`subtitle'") legend(colfirst) ///
+					pie(1, c(cranberry)) pie(2, c(purple)) pie(3, c(green)) ///
+					pie(4, c(midblue)) pie(5, c(erose)) pie(6, c(dkorange)) pie(7, c(gs8))
+		graph export "pie_chart_basic_science_`yr'`QA'.png", replace as(png)
+	} // decade loop
+} // QA / notQA loop
 
 ***** Now NIH vs. Privately Funded Research 2005-2018 *****
 foreach QA in "" "_notQA" {
@@ -1302,27 +1316,33 @@ foreach QA in "" "_notQA" {
 		ren group1 group
 			replace group = "About Diseases" if group == "Dis"
 				gen grpid = 1 if group == "About Diseases"
-			replace group = "Disease Mechanisms Only" if group == "Mech"
+			replace group = "Disease Mechanisms Only" if inlist(group, "Mech", "Mech1", "Mech2")
 				replace grpid = 6 if group == "Disease Mechanisms Only"
-			replace group = "Biological Phenomena Only" if group == "Bio"
+			replace group = "Biological Phenomena Only" if inlist(group, "Bio", "Bio1", "Bio2")
 				replace grpid = 3 if group == "Biological Phenomena Only"
-			replace group = "Chemical Phenomena Only" if group == "Chem"
+			replace group = "Chemical Phenomena Only" if inlist(group, "Chem", "Chem1", "Chem2")
 				replace grpid = 4 if group == "Chemical Phenomena Only"
-			replace group = "Physical Phenomena Only" if group == "Phys"
+			replace group = "Physical Phenomena Only" if inlist(group, "Phys", "Phys1", "Phys2")
 				replace grpid = 5 if group == "Physical Phenomena Only"
 			replace group = "Multiple Groups ex. Diseases" ///
-					if inlist(group, "Mult", "MandBCP1", "MandBCP2", "MandBCP3")
+					if inlist(group, "Mult", "MandBCP1", "MandBCP2", "MandBCP3", "MandBCP4")
 				replace grpid = 2 if group == "Multiple Groups ex. Diseases"
 				collapse (sum) pub_count, by(year group grpid nih)
+
+		collapse (sum) pub_count, by(year nih group grpid)
+			bys year nih: egen single_cat = total(pub_count) if inlist(grpid, 3, 4, 5, 6)
+			bys year nih: ereplace single_cat = max(single_cat)
+			replace pub_count = pub_count - single_cat if grpid == 2
 
 	merge m:1 year nih using `totals', nogen assert(3)
 		drop if group == "Total"
 	append using `totals'
 
 	bys year nih: egen ingroup = total(pub_count)
-		replace group = "Other" if pub_count == . & group == ""
+		replace group = "Other" if grpid == . & group == "Total"
 			replace grpid = 7 if group == "Other"
-		replace pub_count = all_pubs-ingroup if group == "Other"
+		assert pub_count > ingroup if group == "Other"
+		replace pub_count = pub_count-ingroup if group == "Other"
 
 	collapse (sum) pub_count, by(group grpid nih)
 
@@ -1332,17 +1352,19 @@ foreach QA in "" "_notQA" {
 	forval nih = 0/1 {
 		if `nih' == 0 {
 			local title "Publications Receiving No Public Funding"
-			local plabel7 "plabel(7 percent, c(white))"
+			local plabel7 "pl(7 percent, c(white) format(%9.3g))"
 		}
 		if `nih' == 1 {
 			local title "Publications Receiving NIH Funding"
 			if "`QA'" == "" local plabel7 ""
-			else local plabel7 "plabel(7 percent, c(white))"
+			else local plabel7 "pl(7 percent, c(white) format(%9.3g))"
 		}
 
 		graph pie pub_count if nih == `nih', sort(grpid) over(group) ///
-					plabel(1 percent, c(white)) plabel(2 percent, c(white)) ///
-					plabel(3 percent, c(white)) `plabel7' ///
+					pl(1 percent, c(white) format(%9.3g)) ///
+					pl(2 percent, c(white) format(%9.3g)) ///
+					pl(3 percent, c(white) format(%9.3g)) ///
+					pl(4 percent, c(white) format(%9.3g) gap(small)) `plabel7' ///
 					title("`title'") subtitle("(`journals', 2005-2018)") legend(colfirst) ///
 					pie(1, c(cranberry)) pie(2, c(purple)) pie(3, c(green)) ///
 					pie(4, c(midblue)) pie(5, c(erose)) pie(6, c(dkorange)) pie(7, c(gs8))
@@ -1350,16 +1372,340 @@ foreach QA in "" "_notQA" {
 	} // end NIH/not NIH loop
 } // end QA/not QA loop
 *-------------------------
-}
+} // end pies
 *-------------------------
+
+*-------------------------
+if `pies_bydisease' == 1 {
+*-------------------------
+cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
+
+foreach QA in "" "_notQA" {
+foreach maj in "" /*"_notmaj"*/ {
+	use "Master_dta/pmids_by`maj'2ndcat.dta", clear
+		drop if pmid == . // not that many (73)
+		duplicates tag pmid query_name, gen(dup)
+			bys pmid query_name: egen max_year = max(year)
+			drop if year < max_year // just different publication dates
+			drop dup
+			isid pmid query_name
+		duplicates tag pmid, gen(dup)
+			drop if dup > 0 & query_name == "Mult"
+			drop dup
+		isid pmid
+
+		tempfile cat2
+		save `cat2', replace
+
+	use "Master_dta/pmids`QA'_bydisease.dta", clear
+		drop query_name query
+		bys pmid: egen max_year = max(year)
+			drop if year < max_year
+
+	merge m:1 pmid using `cat2', keep(1 3)
+		drop max_year
+		ren query_name cat2
+		replace cat2 = "None" if _merge == 1 & cat == ""
+
+	if "`QA'" == "" local journals "(Top 13 Journals Only)"
+	if "`QA'" == "_notQA" local journals "(All Journals)"
+
+	gen decade = 10*int(year/10)
+	collapse (count) n_pubs = pmid, by(dis_abbr cat2 nih decade)
+
+	reshape wide n_pubs, i(dis_abbr nih decade) j(cat2) string
+	reshape long n_pubs, i(dis_abbr nih decade) j(cat2) string
+	replace n_pubs = 0 if n_pubs == .
+		replace cat2 = "Biological Processes" if cat2 == "BioPhenom"
+			gen catcode = 1 if cat2 == "Biological Processes"
+		replace cat2 = "Cells & Organisms" if cat2 == "CellsOrgs"
+			replace catcode = 2 if cat2 == "Cells & Organisms"
+		replace cat2 = "Chemicals (excl. Pharmaceuticals)" if cat2 == "Chemicals"
+			replace catcode = 3 if cat2 == "Chemicals (excl. Pharmaceuticals)"
+		replace cat2 = "Environment & Public Health" if cat2 == "EnvPH"
+			replace catcode = 4 if cat2 == "Environment & Public Health"
+		replace cat2 = "Health Administration" if cat2 == "HealthAdmin"
+			replace catcode = 5 if cat2 == "Health Administration"
+		replace cat2 = "Health Econ & Organizations" if cat2 == "HealthEcon"
+			replace catcode = 6 if cat2 == "Health Econ & Organizations"
+		replace cat2 = "Medical Technology & Equipment" if cat2 == "Tech"
+			replace catcode = 7 if cat2 == "Medical Technology & Equipment"
+		replace cat2 = "Pharmaceuticals" if cat2 == "Pharma"
+			replace catcode = 8 if cat2 == "Pharmaceuticals"
+		replace cat2 = "Multiple Categories (excl. Pharma)" if cat2 == "Mult"
+			replace catcode = 9 if cat2 == "Multiple Categories (excl. Pharma)"
+		replace cat2 = "Other/None" if cat2 == "None"
+			replace catcode = 10 if cat2 == "Other/None"
+
+	*levelsof dis_abbr, local(diseases) clean
+
+	*Only testing subset of diseases by decade:
+	local diseases "Cardio Neoplasms Neurologic Substance Tropic OthInfectious"
+
+
+	foreach abbr of local diseases {
+
+		if "`abbr'" == "Cardio" local dis "Cardiovascular Diseases"
+		if "`abbr'" == "ChronicResp" local dis "Chronic Respiratory Diseases"
+		if "`abbr'" == "Kidney" local dis "Diabetes and Kidney Diseases"
+		if "`abbr'" == "Digestive" local dis "Digestive Diseases"
+		if "`abbr'" == "Enteritis" local dis "Enteric Infections"
+		if "`abbr'" == "STIs" local dis "HIV/AIDS and other STIs"
+		if "`abbr'" == "Pregnancy" local dis "Maternal and Neonatal Disorders"
+		if "`abbr'" == "Mental" local dis "Mental Disorders"
+		if "`abbr'" == "Muscle" local dis "Musculoskeletal Disorders"
+		if "`abbr'" == "Tropic" local dis "Neglected Tropical Diseases and Malaria"
+		if "`abbr'" == "Neoplasms" local dis "Neoplasms"
+		if "`abbr'" == "Neurologic" local dis "Neurological Disorders"
+		if "`abbr'" == "Dementia" local dis "Alzheimer's & Related Dementias"
+		if "`abbr'" == "Nutrition" local dis "Nutritional Deficiencies"
+		if "`abbr'" == "OthInfectious" local dis "Other Infectious Diseases"
+		if "`abbr'" == "RespInf" local dis "Respiratory Infections and Tuberculosis"
+		if "`abbr'" == "Senses" local dis "Sense Organ Diseases"
+		if "`abbr'" == "Skin" local dis "Skin and Subcutaneous Diseases"
+		if "`abbr'" == "Substance" local dis "Substance Use Disorders"
+
+		local pielabels "pl(3 percent, c(white) format(%9.3g)) pl(9 percent, c(white) format(%9.3g)) pl(10 percent, c(white) format(%9.3g))"
+		
+		if !inlist("`abbr'", "Nutrition", "Mental") {
+			local pielabels "`pielabels' pl(7 percent, c(white) format(%9.3g))"
+		}
+		if inlist("`abbr'", "Mental") {
+			local pielabels "`pielabels' pl(7 percent, c(white) format(%9.3g) gap(small))"
+		}
+		if inlist("`abbr'", "Mental", "Pregnancy") {
+			local pielabels "`pielabels' pl(1 percent, c(white) format(%9.3g))"
+		}
+		if inlist("`abbr'", "Muscle", "Neoplasms", "Senses") {
+			local pielabels "`pielabels' pl(1 percent, c(white) format(%9.3g) gap(small))"
+		}
+		if inlist("`abbr'", "Skin") {
+			local pielabels "`pielabels' pl(1 percent, c(white) format(%9.3g) gap(medium))"
+		}
+		if inlist("`abbr'", "Enteritis", "Muscle", "OthInfectious", "RespInf", ///
+							"Skin", "STIs", "Tropic") {
+			local pielabels "`pielabels' pl(2 percent, c(white) format(%9.3g))"
+		}
+		if inlist("`abbr'", "STIs", "Substance", "Mental") ///
+				| ("`abbr'" == "Dementia" & "`QA'" == "_notQA") {
+			local pielabels "`pielabels' pl(5 percent, c(white) format(%9.3g))"
+		}
+		if inlist("`abbr'", "Tropic") ///
+			| ("`abbr'" == "RespInf" & "`QA'" == "") {
+			local pielabels "`pielabels' pl(4 percent, c(white) format(%9.3g))"
+		}
+		if inlist("`abbr'", "Substance") {
+			local pielabels "`pielabels' pl(8 percent, c(white) format(%9.3g) gap(small))"
+		}
+
+
+		forval nih01 = 0/1 {
+			if `nih01' == 0 local funder = "Non-NIH-Funded"
+			if `nih01' == 1 local funder = "NIH-Funded"
+
+		forval dec = 1980(10)2010 {
+
+			#delimit ;
+			graph pie n_pubs if dis_abbr == "`abbr'" & nih == `nih01' & decade == `dec',
+						over(cat2) sort(catcode) legend(colfirst)
+						title("`funder' Non-Trial Publications" "About `dis'")
+						subtitle("By Additional Major Topic" "`journals'" "`dec's")
+						`pielabels'
+						pie(1, c(dkgreen)) pie(2, c(erose)) pie(3, c(navy))
+						pie(4, c(midgreen)) pie(5, c(dkorange)) pie(6, c(eltblue))
+						pie(7, c(gs5)) pie(8, c(cranberry))
+						pie(9, c(purple)) pie(10, c(gs8));
+			graph export "pie_bydisease`QA'_`abbr'_nih`nih01'`maj'_`dec's.png",
+				replace as(png) wid(1200) hei(800);
+			#delimit cr
+		} // end decade loop
+		} // end NIH/non-NIH loop
+
+	} // end diseases loop
+} // end Major Topic / MeSH Term loop
+} // end QA/notQA loop
+*-------------------------
+} // end pies_bydisease
+*-------------------------
+
+*-------------------------
+if `pies_bydisease_sub' == 1 {
+*-------------------------
+cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
+
+foreach QA in "" "_notQA" {
+	use "Master_dta/pmids_by_sub2ndcat.dta", clear
+		drop if pmid == . // not that many (73)
+		duplicates tag pmid query_name, gen(dup)
+			bys pmid query_name: egen max_year = max(year)
+			drop if year < max_year // just different publication dates
+			drop dup
+			isid pmid query_name
+		duplicates tag pmid, gen(dup)
+			drop if dup > 0 & (query_name == "mult" | query_name == "therapeutic_use")
+			drop dup
+		isid pmid
+
+		tempfile cat2
+		save `cat2', replace
+
+	use "Master_dta/pmids`QA'_bydisease.dta", clear
+		drop query_name query
+		bys pmid: egen max_year = max(year)
+			drop if year < max_year
+
+	merge m:1 pmid using `cat2', keep(1 3)
+		drop max_year
+		ren query_name cat2
+		replace cat2 = "none" if _merge == 1 & cat == ""
+
+	if "`QA'" == "" local journals "(Top 13 Journals Only)"
+	if "`QA'" == "_notQA" local journals "(All Journals)"
+
+	gen decade = 10*int(year/10)
+	collapse (count) n_pubs = pmid, by(dis_abbr cat2 nih /*decade*/)
+
+	reshape wide n_pubs, i(dis_abbr nih) j(cat2) string
+	reshape long n_pubs, i(dis_abbr nih) j(cat2) string
+	replace n_pubs = 0 if n_pubs == .
+		replace cat2 = "Analysis" if cat2 == "analysis"
+			gen catcode = 1 if cat2 == "Analysis"
+		replace cat2 = "Anatomy & Histology" if cat2 == "anatomy_histology"
+			replace catcode = 2 if cat2 == "Anatomy & Histology"
+		replace cat2 = "Chemistry" if cat2 == "chemistry"
+			replace catcode = 3 if cat2 == "Chemistry"
+		replace cat2 = "Classification" if cat2 == "classification"
+			replace catcode = 4 if cat2 == "Classification"
+		replace cat2 = "Diagnosis" if cat2 == "diagnosis"
+			replace catcode = 5 if cat2 == "Diagnosis"
+		replace cat2 = "Drug Effects" if cat2 == "drug_effects"
+			replace catcode = 6 if cat2 == "Drug Effects"
+		replace cat2 = "Education" if cat2 == "education"
+			replace catcode = 7 if cat2 == "Education"
+		replace cat2 = "Ethics" if cat2 == "ethics"
+			replace catcode = 8 if cat2 == "Ethics"
+		replace cat2 = "Etiology" if cat2 == "etiology"
+			replace catcode = 9 if cat2 == "Etiology"
+		replace cat2 = "History" if cat2 == "history"
+			replace catcode = 10 if cat2 == "History"
+		replace cat2 = "Injuries" if cat2 == "injuries"
+			replace catcode = 11 if cat2 == "Injuries"
+		replace cat2 = "Instrumentation" if cat2 == "instrumentation"
+			replace catcode = 12 if cat2 == "Instrumentation"
+		replace cat2 = "Methods" if cat2 == "methods"
+			replace catcode = 13 if cat2 == "Methods"
+		replace cat2 = "Organization & Admin" if cat2 == "org_and_admin"
+			replace catcode = 14 if cat2 == "Organization & Admin"
+		replace cat2 = "Pathogenicity" if cat2 == "pathogenicity"
+			replace catcode = 15 if cat2 == "Pathogenicity"
+		replace cat2 = "Pharmacology" if cat2 == "pharmacology"
+			replace catcode = 16 if cat2 == "Pharmacology"
+		replace cat2 = "Physiology" if cat2 == "physiology"
+			replace catcode = 17 if cat2 == "Physiology"
+		replace cat2 = "Psychology" if cat2 == "psychology"
+			replace catcode = 18 if cat2 == "Psychology"
+		replace cat2 = "Radiation" if cat2 == "radiation"
+			replace catcode = 19 if cat2 == "Radiation"
+		replace cat2 = "Statistics & Data" if cat2 == "stats"
+			replace catcode = 20 if cat2 == "Statistics & Data"
+		replace cat2 = "Therapy" if cat2 == "therapy"
+			replace catcode = 21 if cat2 == "Therapy"
+		replace cat2 = "Multiple Subheadings" if cat2 == "mult"
+			replace catcode = 22 if cat2 == "Multiple Subheadings"
+		replace cat2 = "No Subheadings" if cat2 == "none"
+			replace catcode = 23 if cat2 == "No Subheadings"
+
+	levelsof dis_abbr, local(diseases) clean
+
+	foreach abbr of local diseases {
+
+		if "`abbr'" == "Cardio" local dis "Cardiovascular Diseases"
+		if "`abbr'" == "ChronicResp" local dis "Chronic Respiratory Diseases"
+		if "`abbr'" == "Kidney" local dis "Diabetes and Kidney Diseases"
+		if "`abbr'" == "Digestive" local dis "Digestive Diseases"
+		if "`abbr'" == "Enteritis" local dis "Enteric Infections"
+		if "`abbr'" == "STIs" local dis "HIV/AIDS and other STIs"
+		if "`abbr'" == "Pregnancy" local dis "Maternal and Neonatal Disorders"
+		if "`abbr'" == "Mental" local dis "Mental Disorders"
+		if "`abbr'" == "Muscle" local dis "Musculoskeletal Disorders"
+		if "`abbr'" == "Tropic" local dis "Neglected Tropical Diseases and Malaria"
+		if "`abbr'" == "Neoplasms" local dis "Neoplasms"
+		if "`abbr'" == "Neurologic" local dis "Neurological Disorders"
+		if "`abbr'" == "Dementia" local dis "Alzheimer's & Related Dementias"
+		if "`abbr'" == "Nutrition" local dis "Nutritional Deficiencies"
+		if "`abbr'" == "OthInfectious" local dis "Other Infectious Diseases"
+		if "`abbr'" == "RespInf" local dis "Respiratory Infections and Tuberculosis"
+		if "`abbr'" == "Senses" local dis "Sense Organ Diseases"
+		if "`abbr'" == "Skin" local dis "Skin and Subcutaneous Diseases"
+		if "`abbr'" == "Substance" local dis "Substance Use Disorders"
+/*
+		local pielabels "pl(3 percent, c(white) format(%9.3g)) pl(9 percent, c(white) format(%9.3g)) pl(10 percent, c(white) format(%9.3g))"
+		
+		if !inlist("`abbr'", "Nutrition", "STIs", "Tropic") {
+			local pielabels "`pielabels' pl(7 percent, c(white) format(%9.3g))"
+		}
+		if inlist("`abbr'", "Mental", "Pregnancy") {
+			local pielabels "`pielabels' pl(1 percent, c(white) format(%9.3g))"
+		}
+		if inlist("`abbr'", "Muscle", "Neoplasms", "Skin", "Senses") {
+			local pielabels "`pielabels' pl(1 percent, c(white) format(%9.3g) gap(small))"
+		}
+		if inlist("`abbr'", "Enteritis", "Muscle", "OthInfectious", "RespInf", ///
+							"Senses", "Skin", "STIs", "Tropic") {
+			local pielabels "`pielabels' pl(2 percent, c(white) format(%9.3g))"
+		}
+		if inlist("`abbr'", "Tropic") {
+			local pielabels "`pielabels' pl(4 percent, c(white) format(%9.3g))"
+		}
+		if inlist("`abbr'", "STIs", "Substance") {
+			local pielabels "`pielabels' pl(5 percent, c(white) format(%9.3g))"
+		}
+		if inlist("`abbr'", "Substance") {
+			local pielabels "`pielabels' pl(6 percent, c(white) format(%9.3g) gap(small))"
+			local pielabels "`pielabels' pl(8 percent, c(white) format(%9.3g) gap(small))"
+		}
+*/
+
+		forval nih01 = 0/1 {
+			if `nih01' == 0 local funder = "Non-NIH-Funded"
+			if `nih01' == 1 local funder = "NIH-Funded"
+
+		/*forval dec = 1980(10)2010 {*/
+
+			#delimit ;
+			graph pie n_pubs if dis_abbr == "`abbr'" & nih == `nih01' /*& decade == `dec'*/,
+						over(cat2) sort(catcode) legend(colfirst)
+						title("`funder' Non-Trial Publications" "About `dis'")
+						subtitle("By Additional Major Topic" "`journals'")
+						`pielabels'
+						pie(1, c(gs5)) pie(2, c(gs8)) pie(3, c(gs5))
+						pie(4, c(gs8)) pie(5, c(dkorange)) pie(6, c(cranberry))
+						pie(7, c(gs5)) pie(8, c(gs8)) pie(9, c(gs5))
+						pie(10, c(gs8)) pie(11, c(gs5)) pie(12, c(gs8))
+						pie(13, c(midblue)) pie(14, c(gs8)) pie(15, c(gs5))
+						pie(16, c(gs8)) pie(17, c(gs5)) pie(18, c(gs8))
+						pie(19, c(gs5)) pie(20, c(gs8)) pie(21, c(purple))
+						pie(22, c(gs8)) pie(23, c(gs5));
+			graph export "pie_bydisease_`abbr'_nih`nih01'_sub.png",
+				replace as(png) wid(1200) hei(800);
+			#delimit cr
+		/*}*/ // end decade loop
+		} // end NIH/non-NIH loop
+
+	} // end diseases loop
+} // end QA/notQA loop
+*-------------------------
+} // end pies_bydisease_sub
+*-------------------------
+
 
 *-------------------------
 if `nih_vs_priv' == 1 {
 *-------------------------
 
-cap cd "C:\Users\lmostrom\Documents\Amitabh\"
+cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
 
-foreach QA in "" "_notQA" {
+foreach QA in /*""*/ "_notQA" {
 	import delimited "PubMed_Search_Results_forPies`QA'_from2005.csv", clear varn(1)
 		split query_name, p("_") gen(group)
 		gen nih = group2 == "NIH"
@@ -1399,19 +1745,27 @@ foreach QA in "" "_notQA" {
 		append using `pubs80'
 			gen grpname = "Diseases" if group == "Dis"
 				gen grpid = 1 if group == "Dis"
-			replace grpname = "Disease Mechanisms Only" if group == "Mech"
+			replace group = "Mech" if inlist(group, "Mech1", "Mech2")
+				replace grpname = "Disease Mechanisms Only" if group == "Mech"
 				replace grpid = 6 if group == "Mech"
-			replace grpname = "Biological Phenomena Only" if group == "Bio"
+			replace group = "Bio" if inlist(group, "Bio1", "Bio2")
+				replace grpname = "Biological Phenomena Only" if group == "Bio"
 				replace grpid = 3 if group == "Bio"
-			replace grpname = "Chemical Phenomena Only" if group == "Chem"
+			replace group = "Chem" if inlist(group, "Chem1", "Chem2")
+				replace grpname = "Chemical Phenomena Only" if group == "Chem"
 				replace grpid = 4 if group == "Chem"
-			replace grpname = "Physical Phenomena Only" if group == "Phys"
+			replace group = "Phys" if inlist(group, "Phys1", "Phys2")
+				replace grpname = "Physical Phenomena Only" if group == "Phys"
 				replace grpid = 5 if group == "Phys"
-			replace group = "Mult" if inlist(group, "MandBCP1", "MandBCP2", "MandBCP3")
+			replace group = "Mult" if inlist(group, "MandBCP1", "MandBCP2", "MandBCP3", "MandBCP4")
 				replace grpname = "Multiple Groups ex. Diseases" if group == "Mult"
 				replace grpid = 2 if group == "Mult"
-				collapse (sum) pub_count, by(year group grpname grpid nih)
+			
+			collapse (sum) pub_count, by(year group grpname grpid nih)
 
+			bys year nih: egen single_cat = total(pub_count) if inlist(grpid, 3, 4, 5, 6)
+			bys year nih: ereplace single_cat = max(single_cat)
+			replace pub_count = pub_count - single_cat if grpid == 2
 
 	merge m:1 year nih using `totals', nogen assert(3)
 		drop if group == "Total"
@@ -1419,7 +1773,9 @@ foreach QA in "" "_notQA" {
 
 	bys year nih: egen ingroup = total(pub_count)
 		replace group = "Other" if pub_count == . & group == ""
+			replace grpname = "Other Disciplines" if group == "Other"
 			replace grpid = 7 if group == "Other"
+		assert all_pubs > ingroup
 		replace pub_count = all_pubs-ingroup if group == "Other"
 
 	bys year group: egen tot_bygrp = total(pub_count)
@@ -1509,6 +1865,7 @@ foreach QA in "" "_notQA" {
 			replace cause = "Neglected Tropical Diseases and Malaria" if disease1 == "Tropic"
 			replace cause = "Neoplasms" if disease1 == "Neoplasms"
 			replace cause = "Neurological Disorders" if disease1 == "Neurologic"
+			replace cause = "Alzheimer's & Related Dementias"  if disease1 == "Dementia"
 			replace cause = "Nutritional Deficiencies" if disease1 == "Nutrition"
 			replace cause = "Other Infectious Diseases" if disease1 == "OthInfectious"
 			replace cause = "Respiratory Infections and Tuberculosis" if disease1 == "RespInf"
@@ -1544,6 +1901,7 @@ foreach QA in "" "_notQA" {
 			if "`dis'" == "Neglected Tropical Diseases and Malaria" local abbr "Tropic"
 			if "`dis'" == "Neoplasms" local abbr "Neoplasms"
 			if "`dis'" == "Neurological Disorders" local abbr "Neurologic"
+			if "`dis'" == "Alzheimer's & Related Dementias" local abbr "Dementia"
 			if "`dis'" == "Nutritional Deficiencies" local abbr "Nutrition"
 			if "`dis'" == "Other Infectious Diseases" local abbr "OthInfectious"
 			if "`dis'" == "Respiratory Infections and Tuberculosis" local abbr "RespInf"
@@ -1576,7 +1934,7 @@ foreach QA in "" "_notQA" {
 
 	#delimit ;
 	foreach dis in Cardio ChronicResp Digestive Enteritis Kidney Mental
-					Muscle Neoplasms Neurologic Nutrition OthInfectious
+					Muscle Neoplasms Neurologic Dementia Nutrition OthInfectious
 					Pregnancy RespInf Senses Skin STIs Substance Tropic {;
 
 		grc1leg "gphs/disease_GBD_counts_byfunding`QA'_from1980-`dis'.gph"
