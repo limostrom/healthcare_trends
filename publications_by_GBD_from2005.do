@@ -17,13 +17,16 @@ local combine 1
 
 global repo "C:\Users\lmostrom\Documents\GitHub\healthcare_trends\"
 
-cap cd "C:\Users\lmostrom\Documents\Amitabh\"
+cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
 
 if 	`plot' == 1 {
 *================================================================================
 foreach pub_ct in "" "CT_" {
 *================================================================================
-	import delimited "PubMed_Search_Results_`pub_ct'GBDlev2_from2005.csv", varn(1) clear
+	if "`pub_ct'" == "" local QA ""
+	if "`pub_ct'" == "CT_" local QA "_notQA"
+
+	import delimited "PubMed_Search_Results_`pub_ct'GBDlev2`QA'_from2005.csv", varn(1) clear
 
 	split query_name, gen(disease_area) p("_")
 		keep if inlist(disease_area2, "NIH", "Priv")
