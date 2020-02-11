@@ -8,8 +8,8 @@ pause on
 
 local plots 0
 local plots_2005 0
-local plots_bydis 0
-local plots_bydiscipline 1
+local plots_bydis 1
+local plots_bydiscipline 0
 	local old_MSAs 0
 	local ext "_master" // set to "" for lifesci, "_hs" for health service
 
@@ -402,7 +402,7 @@ preserve
 *---------------------------
 if `plots_bydis' == 1 {
 *---------------------------
-foreach ct_not in "" /*"clintr_"*/ {
+foreach ct_not in "" "clintr_" {
 	foreach QA in /*""*/ "fullQA_" /*"notQA_"*/ {
 		if "`QA'" != "fullQA_" {
 			use "Master_dta/pmids_`ct_not'`QA'bydisease.dta", clear
@@ -450,7 +450,7 @@ foreach ct_not in "" /*"clintr_"*/ {
 			 yti("Share of US Publications with Found MSA Code (%)")
 			 xti("Year");
 			#delimit cr
-			graph export coverage`ext'_samp1pct_1-2-2020.png, as(png) replace wid(1200) hei(700)
+			graph export coverage`ext'_samp1pct_1-31-2020.png, as(png) replace wid(1200) hei(700)
 		restore
 
 		gen MSAgroup = "BOS" if cbsacode == 14460
@@ -505,6 +505,7 @@ foreach ct_not in "" /*"clintr_"*/ {
 					if "`dis'" == "Tropic" local dis_name "Neglected Tropical Diseases and Malaria"
 					if "`dis'" == "Neoplasms" local dis_name "Neoplasms"
 					if "`dis'" == "Neurologic" local dis_name "Neurological Disorders"
+					if "`dis'" == "Dementia" local dis_name "Alzheimer's & Related Dementias"
 					if "`dis'" == "Nutrition" local dis_name "Nutritional Deficiencies"
 					if "`dis'" == "OthInfectious" local dis_name "Other Infectious Diseases"
 					if "`dis'" == "RespInf" local dis_name "Respiratory Infections and Tuberculosis"
@@ -527,11 +528,11 @@ foreach ct_not in "" /*"clintr_"*/ {
 				} // nih loop
 
 				#delimit ;
-				grc1leg "gphs/pubs`ext'_`ct_not'`QA'byDec_byMSA_`dis'_nih1.gph"
+				cap noi grc1leg "gphs/pubs`ext'_`ct_not'`QA'byDec_byMSA_`dis'_nih1.gph"
 						"gphs/pubs`ext'_`ct_not'`QA'byDec_byMSA_`dis'_nih0.gph",
 					legendfrom("gphs/pubs`ext'_`ct_not'`QA'byDec_byMSA_`dis'_nih0.gph")
 					xcommon c(1);
-				graph export "pubs`ext'_`ct_not'`QA'byDec_byMSA_`dis'_combined.png",
+				cap noi graph export "pubs`ext'_`ct_not'`QA'byDec_byMSA_`dis'_combined.png",
 					replace as(png) wid(1600) hei(1400);
 				#delimit cr
 
@@ -551,6 +552,7 @@ foreach ct_not in "" /*"clintr_"*/ {
 				if "`dis'" == "Tropic" local dis_name "Neglected Tropical Diseases and Malaria"
 				if "`dis'" == "Neoplasms" local dis_name "Neoplasms"
 				if "`dis'" == "Neurologic" local dis_name "Neurological Disorders"
+				if "`dis'" == "Dementia" local dis_name "Alzheimer's & Related Dementias"
 				if "`dis'" == "Nutrition" local dis_name "Nutritional Deficiencies"
 				if "`dis'" == "OthInfectious" local dis_name "Other Infectious Diseases"
 				if "`dis'" == "RespInf" local dis_name "Respiratory Infections and Tuberculosis"
@@ -602,6 +604,7 @@ foreach ct_not in "" /*"clintr_"*/ {
 					if "`dis'" == "Tropic" local dis_name "Neglected Tropical Diseases and Malaria"
 					if "`dis'" == "Neoplasms" local dis_name "Neoplasms"
 					if "`dis'" == "Neurologic" local dis_name "Neurological Disorders"
+					if "`dis'" == "Dementia" local dis_name "Alzheimer's & Related Dementias"
 					if "`dis'" == "Nutrition" local dis_name "Nutritional Deficiencies"
 					if "`dis'" == "OthInfectious" local dis_name "Other Infectious Diseases"
 					if "`dis'" == "RespInf" local dis_name "Respiratory Infections and Tuberculosis"
@@ -638,6 +641,7 @@ foreach ct_not in "" /*"clintr_"*/ {
 				if "`dis'" == "Tropic" local dis_name "Neglected Tropical Diseases and Malaria"
 				if "`dis'" == "Neoplasms" local dis_name "Neoplasms"
 				if "`dis'" == "Neurologic" local dis_name "Neurological Disorders"
+				if "`dis'" == "Dementia" local dis_name "Alzheimer's & Related Dementias"
 				if "`dis'" == "Nutrition" local dis_name "Nutritional Deficiencies"
 				if "`dis'" == "OthInfectious" local dis_name "Other Infectious Diseases"
 				if "`dis'" == "RespInf" local dis_name "Respiratory Infections and Tuberculosis"
