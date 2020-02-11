@@ -30,7 +30,7 @@ api_parse = function(query){
 start_year = 1980
 
 # set to econ or diseases:
-group_term = "GBDlev2"
+group_term = "piecharts"
 
 years = as.character(start_year:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
@@ -134,7 +134,7 @@ if (group_term == "all") {
 				'.csv')
 }
 if (group_term == "piecharts") {
-	outfile = paste0('Amitabh/PubMed_Search_Results_forPies_from',
+	outfile = paste0('../Dropbox/Amitabh/PubMed_Search_Results_forPies_from',
 				as.character(start_year),
 				'.csv')
 }

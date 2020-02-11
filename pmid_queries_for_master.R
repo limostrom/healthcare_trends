@@ -209,11 +209,11 @@ for (i in 1:length(query_names)) {
 	write_csv(subset, outfile)
 }
 # (for testing purposes only) PMIDs = c(22368089, 31856095)
-PMIDs = read_csv('Amitabh/PMIDs/PMIDs_master_samp4pct.csv')
-info = sapply(X = unlist(PMIDs)[210001:220000], FUN = pull_affs)
-master = data.frame(pmid = unlist(PMIDs)[210001:220000], date = info[1,], mesh = info[2,],
+PMIDs = read_csv('../Dropbox/Amitabh/PMIDs/PMIDs_master_samp4pct.csv')
+info = sapply(X = unlist(PMIDs)[600001:610000], FUN = pull_affs)
+master = data.frame(pmid = unlist(PMIDs)[600001:610000], date = info[1,], mesh = info[2,],
 				journal=info[3,], affil=info[4,], pt = info[5,], gr = info[6,])
 
-write_csv(master, path = 'Amitabh/Master_dta/raw_4pct_210001_220000.csv')
+write_csv(master, path = '../Dropbox/Amitabh/Master_dta/raw_4pct_600001_610000.csv')
 
 
