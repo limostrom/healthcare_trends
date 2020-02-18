@@ -25,6 +25,7 @@ local all_1980 0
 local all_2005 0
 local pies 0
 local pies_bydisease 0
+local ts_bydisease 0
 local pies_bydisease_sub 1
 local nih_vs_priv 0
 
@@ -1410,11 +1411,11 @@ foreach maj in "" /*"_notmaj"*/ {
 	if "`QA'" == "" local journals "(Top 13 Journals Only)"
 	if "`QA'" == "_notQA" local journals "(All Journals)"
 
-	gen decade = 10*int(year/10)
-	collapse (count) n_pubs = pmid, by(dis_abbr cat2 nih decade)
+	*gen decade = 10*int(year/10)
+	collapse (count) n_pubs = pmid, by(dis_abbr cat2 nih /*decade*/)
 
-	reshape wide n_pubs, i(dis_abbr nih decade) j(cat2) string
-	reshape long n_pubs, i(dis_abbr nih decade) j(cat2) string
+	reshape wide n_pubs, i(dis_abbr nih /*decade*/) j(cat2) string
+	reshape long n_pubs, i(dis_abbr nih /*decade*/) j(cat2) string
 	replace n_pubs = 0 if n_pubs == .
 		replace cat2 = "Biological Processes" if cat2 == "BioPhenom"
 			gen catcode = 1 if cat2 == "Biological Processes"
@@ -1441,7 +1442,6 @@ foreach maj in "" /*"_notmaj"*/ {
 
 	*Only testing subset of diseases by decade:
 	local diseases "Cardio Neoplasms Neurologic Substance Tropic OthInfectious"
-
 
 	foreach abbr of local diseases {
 
@@ -1529,6 +1529,161 @@ foreach maj in "" /*"_notmaj"*/ {
 *-------------------------
 
 *-------------------------
+if `ts_bydisease' == 1 {
+*-------------------------
+cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
+
+foreach QA in /*""*/ "_notQA" {
+	use "Master_dta/pmids_by2ndcat.dta", clear
+		drop if pmid == . // not that many (73)
+		duplicates tag pmid query_name, gen(dup)
+			bys pmid query_name: egen max_year = max(year)
+			drop if year < max_year // just different publication dates
+			drop dup
+			isid pmid query_name
+		duplicates tag pmid, gen(dup)
+			drop if dup > 0 & query_name == "Mult"
+			drop dup
+		isid pmid
+
+		tempfile cat2
+		save `cat2', replace
+
+	use "Master_dta/pmids`QA'_bydisease.dta", clear
+		drop query_name query
+		bys pmid: egen max_year = max(year)
+			drop if year < max_year
+
+	merge m:1 pmid using `cat2', keep(1 3)
+		drop max_year
+		ren query_name cat2
+		replace cat2 = "None" if _merge == 1 & cat == ""
+
+	if "`QA'" == "" local journals "(Top 13 Journals Only)"
+	if "`QA'" == "_notQA" local journals "(All Journals)"
+sort year dis_abbr nih
+pause
+	collapse (count) n_pubs = pmid, by(dis_abbr cat2 nih year)
+
+	reshape wide n_pubs, i(dis_abbr nih year) j(cat2) string
+	reshape long n_pubs, i(dis_abbr nih year) j(cat2) string
+	replace n_pubs = 0 if n_pubs == .
+	bys dis_abbr nih year: egen tot_pubs = total(n_pubs)
+		gen sh_pubs = n_pubs/tot_pubs*100
+
+	levelsof cat2, local(categories) clean
+
+		replace cat2 = "Biological Processes" if cat2 == "BioPhenom"
+			gen catcode = 1 if cat2 == "Biological Processes"
+		replace cat2 = "Cells & Organisms" if cat2 == "CellsOrgs"
+			replace catcode = 2 if cat2 == "Cells & Organisms"
+		replace cat2 = "Chemicals (excl. Pharmaceuticals)" if cat2 == "Chemicals"
+			replace catcode = 3 if cat2 == "Chemicals (excl. Pharmaceuticals)"
+		replace cat2 = "Environment & Public Health" if cat2 == "EnvPH"
+			replace catcode = 4 if cat2 == "Environment & Public Health"
+		replace cat2 = "Health Administration" if cat2 == "HealthAdmin"
+			replace catcode = 5 if cat2 == "Health Administration"
+		replace cat2 = "Health Econ & Organizations" if cat2 == "HealthEcon"
+			replace catcode = 6 if cat2 == "Health Econ & Organizations"
+		replace cat2 = "Medical Technology & Equipment" if cat2 == "Tech"
+			replace catcode = 7 if cat2 == "Medical Technology & Equipment"
+		replace cat2 = "Pharmaceuticals" if cat2 == "Pharma"
+			replace catcode = 8 if cat2 == "Pharmaceuticals"
+		replace cat2 = "Multiple Categories (excl. Pharma)" if cat2 == "Mult"
+			replace catcode = 9 if cat2 == "Multiple Categories (excl. Pharma)"
+		replace cat2 = "Other/None" if cat2 == "None"
+			replace catcode = 10 if cat2 == "Other/None"
+
+	levelsof dis_abbr, local(diseases) clean
+/*
+	foreach abbr of local diseases {
+
+		if "`abbr'" == "Cardio" local dis "Cardiovascular Diseases"
+		if "`abbr'" == "ChronicResp" local dis "Chronic Respiratory Diseases"
+		if "`abbr'" == "Kidney" local dis "Diabetes and Kidney Diseases"
+		if "`abbr'" == "Digestive" local dis "Digestive Diseases"
+		if "`abbr'" == "Enteritis" local dis "Enteric Infections"
+		if "`abbr'" == "STIs" local dis "HIV/AIDS and other STIs"
+		if "`abbr'" == "Pregnancy" local dis "Maternal and Neonatal Disorders"
+		if "`abbr'" == "Mental" local dis "Mental Disorders"
+		if "`abbr'" == "Muscle" local dis "Musculoskeletal Disorders"
+		if "`abbr'" == "Tropic" local dis "Neglected Tropical Diseases and Malaria"
+		if "`abbr'" == "Neoplasms" local dis "Neoplasms"
+		if "`abbr'" == "Neurologic" local dis "Neurological Disorders"
+		if "`abbr'" == "Dementia" local dis "Alzheimer's & Related Dementias"
+		if "`abbr'" == "Nutrition" local dis "Nutritional Deficiencies"
+		if "`abbr'" == "OthInfectious" local dis "Other Infectious Diseases"
+		if "`abbr'" == "RespInf" local dis "Respiratory Infections and Tuberculosis"
+		if "`abbr'" == "Senses" local dis "Sense Organ Diseases"
+		if "`abbr'" == "Skin" local dis "Skin and Subcutaneous Diseases"
+		if "`abbr'" == "Substance" local dis "Substance Use Disorders"
+
+	foreach cat_abbr of local categories {
+
+		if "`cat_abbr'" == "BioPhenom" local catname "Biological Processes" 
+		if "`cat_abbr'" == "CellsOrgs" local catname "Cells & Organisms" 
+		if "`cat_abbr'" == "Chemicals" local catname "Chemicals (excl. Pharmaceuticals)" 
+		if "`cat_abbr'" == "EnvPH" local catname "Environment & Public Health" 
+		if "`cat_abbr'" == "HealthAdmin" local catname "Health Administration" 
+		if "`cat_abbr'" == "HealthEcon" local catname "Health Econ & Organizations" 
+		if "`cat_abbr'" == "Tech" local catname "Medical Technology & Equipment" 
+		if "`cat_abbr'" == "Pharma" local catname "Pharmaceuticals" 
+		if "`cat_abbr'" == "Mult" local catname "Multiple Categories (excl. Pharma)" 
+		if "`cat_abbr'" == "None" local catname "Other/None" 
+
+			#delimit ;
+			tw (line sh_pubs year if dis_abbr == "`abbr'" & cat2 == "`catname'" 
+													& nih == 1, lc(red))
+			   (line sh_pubs year if dis_abbr == "`abbr'" & cat2 == "`catname'" 
+			   										& nih == 0 & year <= 2004, lc(green) lp(-))
+			   (line sh_pubs year if dis_abbr == "`abbr'" & cat2 == "`catname'" 
+			   										& nih == 0 & year >= 2005, lc(green) lp(l)),
+				legend(order(1 "NIH Presence" 2 "No NIH Presence" 3 "No Public Presence") r(1))
+				yti("Share of Non-Trial Pubs Also About" "`catname' (%)" " ")
+				title("`dis'") xti("") subti("`journals'");
+			graph export "ts_cat2_bydisease`QA'_`abbr'_`cat_abbr'.png",
+				replace as(png) wid(1200) hei(800);
+			#delimit cr
+	} // end cat2 loop
+	} // end diseases loop
+*/
+	collapse (sum) n_pubs, by(cat2 nih year)
+	bys nih year: egen tot_pubs = total(n_pubs)
+		gen sh_pubs = n_pubs/tot_pubs*100
+
+	foreach cat_abbr of local categories {
+
+		if "`cat_abbr'" == "BioPhenom" local catname "Biological Processes" 
+		if "`cat_abbr'" == "CellsOrgs" local catname "Cells & Organisms" 
+		if "`cat_abbr'" == "Chemicals" local catname "Chemicals (excl. Pharmaceuticals)" 
+		if "`cat_abbr'" == "EnvPH" local catname "Environment & Public Health" 
+		if "`cat_abbr'" == "HealthAdmin" local catname "Health Administration" 
+		if "`cat_abbr'" == "HealthEcon" local catname "Health Econ & Organizations" 
+		if "`cat_abbr'" == "Tech" local catname "Medical Technology & Equipment" 
+		if "`cat_abbr'" == "Pharma" local catname "Pharmaceuticals" 
+		if "`cat_abbr'" == "Mult" local catname "Multiple Categories (excl. Pharma)" 
+		if "`cat_abbr'" == "None" local catname "Other/None" 
+
+			#delimit ;
+			tw (line sh_pubs year if cat2 == "`catname'" & nih == 1, lc(red))
+			   (line sh_pubs year if cat2 == "`catname'" 
+			   										& nih == 0 & year <= 2004, lc(green) lp(-))
+			   (line sh_pubs year if cat2 == "`catname'" 
+			   										& nih == 0 & year >= 2005, lc(green) lp(l)),
+				legend(order(1 "NIH Presence" 2 "No NIH Presence" 3 "No Public Presence") r(1))
+				yti("Share of Non-Trial Pubs Also About" "`catname' (%)" " ")
+				title("All Diseases") xti("") subti("`journals'");
+			graph export "ts_cat2_bydisease`QA'_all_`cat_abbr'.png",
+				replace as(png) wid(1200) hei(800);
+			#delimit cr
+	} // end cat2 loop
+
+} // end QA/notQA loop
+*-------------------------
+} // end ts_bydisease
+*-------------------------
+
+*-------------------------
 if `pies_bydisease_sub' == 1 {
 *-------------------------
 cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
@@ -1542,7 +1697,7 @@ foreach QA in "" "_notQA" {
 			drop dup
 			isid pmid query_name
 		duplicates tag pmid, gen(dup)
-			drop if dup > 0 & (query_name == "mult" | query_name == "therapeutic_use")
+			drop if dup > 0 & (query_name == "mult" | query_name == "therapy_and")
 			drop dup
 		isid pmid
 
@@ -1638,33 +1793,6 @@ foreach QA in "" "_notQA" {
 		if "`abbr'" == "Senses" local dis "Sense Organ Diseases"
 		if "`abbr'" == "Skin" local dis "Skin and Subcutaneous Diseases"
 		if "`abbr'" == "Substance" local dis "Substance Use Disorders"
-/*
-		local pielabels "pl(3 percent, c(white) format(%9.3g)) pl(9 percent, c(white) format(%9.3g)) pl(10 percent, c(white) format(%9.3g))"
-		
-		if !inlist("`abbr'", "Nutrition", "STIs", "Tropic") {
-			local pielabels "`pielabels' pl(7 percent, c(white) format(%9.3g))"
-		}
-		if inlist("`abbr'", "Mental", "Pregnancy") {
-			local pielabels "`pielabels' pl(1 percent, c(white) format(%9.3g))"
-		}
-		if inlist("`abbr'", "Muscle", "Neoplasms", "Skin", "Senses") {
-			local pielabels "`pielabels' pl(1 percent, c(white) format(%9.3g) gap(small))"
-		}
-		if inlist("`abbr'", "Enteritis", "Muscle", "OthInfectious", "RespInf", ///
-							"Senses", "Skin", "STIs", "Tropic") {
-			local pielabels "`pielabels' pl(2 percent, c(white) format(%9.3g))"
-		}
-		if inlist("`abbr'", "Tropic") {
-			local pielabels "`pielabels' pl(4 percent, c(white) format(%9.3g))"
-		}
-		if inlist("`abbr'", "STIs", "Substance") {
-			local pielabels "`pielabels' pl(5 percent, c(white) format(%9.3g))"
-		}
-		if inlist("`abbr'", "Substance") {
-			local pielabels "`pielabels' pl(6 percent, c(white) format(%9.3g) gap(small))"
-			local pielabels "`pielabels' pl(8 percent, c(white) format(%9.3g) gap(small))"
-		}
-*/
 
 		forval nih01 = 0/1 {
 			if `nih01' == 0 local funder = "Non-NIH-Funded"
@@ -1679,14 +1807,14 @@ foreach QA in "" "_notQA" {
 						subtitle("By Additional Major Topic" "`journals'")
 						`pielabels'
 						pie(1, c(gs5)) pie(2, c(gs8)) pie(3, c(gs5))
-						pie(4, c(gs8)) pie(5, c(dkorange)) pie(6, c(cranberry))
+						pie(4, c(gs8)) pie(5, c(dkorange)) pie(6, c(gs8))
 						pie(7, c(gs5)) pie(8, c(gs8)) pie(9, c(gs5))
 						pie(10, c(gs8)) pie(11, c(gs5)) pie(12, c(gs8))
-						pie(13, c(midblue)) pie(14, c(gs8)) pie(15, c(gs5))
-						pie(16, c(gs8)) pie(17, c(gs5)) pie(18, c(gs8))
-						pie(19, c(gs5)) pie(20, c(gs8)) pie(21, c(purple))
+						pie(13, c(gs5)) pie(14, c(gs8)) pie(15, c(gs5))
+						pie(16, c(gs8)) pie(17, c(cranberry)) pie(18, c(gs8))
+						pie(19, c(gs5)) pie(20, c(midblue)) pie(21, c(purple))
 						pie(22, c(gs8)) pie(23, c(gs5));
-			graph export "pie_bydisease_`abbr'_nih`nih01'_sub.png",
+			graph export "pies_bydisease`QA'_`abbr'_nih`nih01'_sub.png",
 				replace as(png) wid(1200) hei(800);
 			#delimit cr
 		/*}*/ // end decade loop
