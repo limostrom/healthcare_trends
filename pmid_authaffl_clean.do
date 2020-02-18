@@ -257,7 +257,7 @@ if `pmids_append_master' == 1 {
 *---------------------------
 cd "C:/Users/lmostrom/Dropbox/Amitabh/"
 *-----* Read in list of PMIDs by disease, CT/Non-Trial Pub, and top 13 journal/all journals *-----*
-/*
+
 foreach ct_not in "" "clintr_" {
 	foreach QA in "" "notQA_" {
 		foreach from in "from1980" "from2005" {
@@ -268,12 +268,16 @@ foreach ct_not in "" "clintr_" {
 				import delimited pmid query_name using "PMIDs/master/`file'", rowr(2:) clear
 				dis "`file'"
 				if _N > 0 {
+					tostring pmid, replace
+					drop if pmid == "NA"
+					destring pmid, replace
+
 					if `i' == 1 {
 						tempfile full_pmids
 						save `full_pmids', replace 
 					}
 					if `i' > 1 {
-						append using `full_pmids', force
+						append using `full_pmids'
 						save `full_pmids', replace
 					}
 
@@ -306,7 +310,7 @@ foreach ct_not in "" "clintr_" {
 	}
 }
 
-
+/*
 *-----* Read in list of PMIDs by disease, CT/Non-Trial Pub, and top 13 journal/all journals *-----*
 foreach from in "1980" "2005" {
 	local filelist: dir "PMIDs/PieCharts/" files "PMIDs_`from'_*.csv"
@@ -353,6 +357,7 @@ foreach from in "1980" "2005" {
 */
 *-----* Read in list of PMIDs by secondary categories (Pharma, Chem, Cells, Pharmacology, Phenomena) *-----*
 *		these are for the pie charts by disease of additional MeSH categories
+/*
 foreach sub in /*""*/ "_sub" /*"_notmaj"*/ {
 	local filelist: dir "PMIDs/PieCharts/" files "PMIDs_dis`sub'_pies_*.csv"
 
@@ -386,7 +391,7 @@ foreach sub in /*""*/ "_sub" /*"_notmaj"*/ {
 
 	save "Master_dta/pmids_by`sub'2ndcat.dta", replace
 }
-
+*/
 *-----* Read in scraped dates, journals, pub types, grant codes, and author affiliations *-----*
 /*
 local filelist: dir "Master_dta/" files "raw_*.csv"
