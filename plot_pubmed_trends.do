@@ -25,8 +25,8 @@ local all_1980 0
 local all_2005 0
 local pies 0
 local pies_bydisease 0
-local ts_bydisease 0
-local pies_bydisease_sub 1
+local ts_bydisease 1
+local pies_bydisease_sub 0
 local nih_vs_priv 0
 
 *=======================================================================
@@ -1533,8 +1533,9 @@ if `ts_bydisease' == 1 {
 *-------------------------
 cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
 
-foreach QA in /*""*/ "_notQA" {
-	use "Master_dta/pmids_by2ndcat.dta", clear
+foreach QA in "" "_notQA" {
+foreach list in "by2ndcat" "medtech_subcats" "pharma_subcats" {
+	use "Master_dta/pmids_`list'.dta", clear
 		drop if pmid == . // not that many (73)
 		duplicates tag pmid query_name, gen(dup)
 			bys pmid query_name: egen max_year = max(year)
@@ -1542,7 +1543,9 @@ foreach QA in /*""*/ "_notQA" {
 			drop dup
 			isid pmid query_name
 		duplicates tag pmid, gen(dup)
-			drop if dup > 0 & query_name == "Mult"
+			if "`list'" == "by2ndcat" drop if dup > 0 & query_name == "Mult"
+			if "`list'" == "medtech_subcats" drop if dup > 0 & query_name == "AllTech"
+			if "`list'" == "pharma_subcats" drop if dup > 0 & query_name == "AllPharma"
 			drop dup
 		isid pmid
 
@@ -1561,8 +1564,7 @@ foreach QA in /*""*/ "_notQA" {
 
 	if "`QA'" == "" local journals "(Top 13 Journals Only)"
 	if "`QA'" == "_notQA" local journals "(All Journals)"
-sort year dis_abbr nih
-pause
+
 	collapse (count) n_pubs = pmid, by(dis_abbr cat2 nih year)
 
 	reshape wide n_pubs, i(dis_abbr nih year) j(cat2) string
@@ -1572,7 +1574,9 @@ pause
 		gen sh_pubs = n_pubs/tot_pubs*100
 
 	levelsof cat2, local(categories) clean
-
+	levelsof dis_abbr, local(diseases) clean
+*=====*
+	*---* If All Secondary Categories *---*
 		replace cat2 = "Biological Processes" if cat2 == "BioPhenom"
 			gen catcode = 1 if cat2 == "Biological Processes"
 		replace cat2 = "Cells & Organisms" if cat2 == "CellsOrgs"
@@ -1594,8 +1598,50 @@ pause
 		replace cat2 = "Other/None" if cat2 == "None"
 			replace catcode = 10 if cat2 == "Other/None"
 
-	levelsof dis_abbr, local(diseases) clean
-/*
+	*---* If Breaking Down Medical Equipment & Techniques *---*
+		replace cat2 = "Anesthesia Only" if cat2 == "Anesth"
+			replace catcode = 1 if cat2 == "Anesthesia Only"
+		replace cat2 = "Dentistry Only" if cat2 == "Dent"
+			replace catcode = 2 if cat2 == "Dentistry Only"
+		replace cat2 = "Diagnosis Only" if cat2 == "Diagnosis"
+			replace catcode = 3 if cat2 == "Diagnosis Only"
+		replace cat2 = "Equipment Only" if cat2 == "Equipment"
+			replace catcode = 4 if cat2 == "Equipment Only"
+		replace cat2 = "Investigative Techniques Only" if cat2 == "Inv"
+			replace catcode = 5 if cat2 == "Investigative Techniques Only"
+		replace cat2 = "Surgical Procedures Only" if cat2 == "Surg"
+			replace catcode = 6 if cat2 == "Surgical Procedures Only"
+		replace cat2 = "Therapeutics Only" if cat2 == "Therap"
+			replace catcode = 7 if cat2 == "Therapeutics Only"
+		replace cat2 = "Other Equipment & Techniques Topics" if cat2 == "AllTech"
+			replace catcode = 8 if cat2 == "Other Equipment & Techniques Topics"		
+
+	*---* If Breaking Down Pharmaceutical Preparations *---* 
+		replace cat2 = "Controlled Substances" if cat2 == "ContSub"
+			replace catcode = 1 if cat2 == "Controlled Substances"
+		replace cat2 = "Dosage Forms" if cat2 == "Dosage"
+			replace catcode = 2 if cat2 == "Dosage Forms"
+		replace cat2 = "Drug Combinations" if cat2 == "Combos"
+			replace catcode = 3 if cat2 == "Drug Combinations"
+		replace cat2 = "Traditional/Homeopathic Remedies" if cat2 == "NatDrugs"
+			replace catcode = 4 if cat2 == "Traditional/Homeopathic Remedies"
+		replace cat2 = "Essential Drugs" if cat2 == "EssDrugs"
+			replace catcode = 5 if cat2 == "Essential Drugs"
+		replace cat2 = "Generic Drugs" if cat2 == "GenDrugs"
+			replace catcode = 6 if cat2 == "Generic Drugs"
+		replace cat2 = "Investigational Drugs" if cat2 == "InvDrugs"
+			replace catcode = 7 if cat2 == "Investigational Drugs"
+		replace cat2 = "Illegal Drugs & Marijuana" if cat2 == "IllicitDrugs"
+			replace catcode = 8 if cat2 == "Illegal Drugs & Marijuana"
+		replace cat2 = "Nonprescription Drugs" if cat2 == "NonpreDrugs"
+			replace catcode = 9 if cat2 == "Nonprescription Drugs"
+		replace cat2 = "Prescription Drugs" if cat2 == "PreDrugs"
+			replace catcode = 10 if cat2 == "Prescription Drugs"
+		replace cat2 = "Substandard Drugs" if cat2 == "Substandard"
+			replace catcode = 11 if cat2 == "Substandard Drugs"
+		replace cat2 = "Other Pharmaceutical Topics" if cat2 == "AllPharma"
+			replace catcode = 12 if cat2 == "Other Pharmaceutical Topics"
+*=====*
 	foreach abbr of local diseases {
 
 		if "`abbr'" == "Cardio" local dis "Cardiovascular Diseases"
@@ -1619,7 +1665,8 @@ pause
 		if "`abbr'" == "Substance" local dis "Substance Use Disorders"
 
 	foreach cat_abbr of local categories {
-
+	*=====*
+		*---* If All Secondary Categories *---*
 		if "`cat_abbr'" == "BioPhenom" local catname "Biological Processes" 
 		if "`cat_abbr'" == "CellsOrgs" local catname "Cells & Organisms" 
 		if "`cat_abbr'" == "Chemicals" local catname "Chemicals (excl. Pharmaceuticals)" 
@@ -1629,7 +1676,32 @@ pause
 		if "`cat_abbr'" == "Tech" local catname "Medical Technology & Equipment" 
 		if "`cat_abbr'" == "Pharma" local catname "Pharmaceuticals" 
 		if "`cat_abbr'" == "Mult" local catname "Multiple Categories (excl. Pharma)" 
-		if "`cat_abbr'" == "None" local catname "Other/None" 
+		if "`cat_abbr'" == "None" local catname "Other/None"
+
+		*---* If Breaking Down Medical Equipment & Techniques *---*
+		if "`cat_abbr'" == "Anesth" local catname "Anesthesia Only"
+		if "`cat_abbr'" == "Dent" local catname "Dentistry Only"
+		if "`cat_abbr'" == "Diagnosis" local catname "Diagnosis Only"
+		if "`cat_abbr'" == "Equipment" local catname "Equipment Only"
+		if "`cat_abbr'" == "Inv" local catname "Investigative Techniques Only"
+		if "`cat_abbr'" == "Surg" local catname "Surgical Procedures Only"
+		if "`cat_abbr'" == "Therap" local catname "Therapeutics Only"
+		if "`cat_abbr'" == "AllTech" local catname "Other Equipment & Techniques Topics"
+
+		*---* If Breaking Down Pharmaceutical Preparations *---* 
+		if "`cat_abbr'" == "ContSub" local catname "Controlled Substances"
+		if "`cat_abbr'" == "Dosage" local catname "Dosage Forms"
+		if "`cat_abbr'" == "Combos" local catname "Drug Combinations"
+		if "`cat_abbr'" == "NatDrugs" local catname "Traditional/Homeopathic Remedies"
+		if "`cat_abbr'" == "EssDrugs" local catname "Essential Drugs"
+		if "`cat_abbr'" == "GenDrugs" local catname "Generic Drugs"
+		if "`cat_abbr'" == "InvDrugs" local catname "Investigational Drugs"
+		if "`cat_abbr'" == "IllicitDrugs" local catname "Illegal Drugs & Marijuana"
+		if "`cat_abbr'" == "NonpreDrugs" local catname "Nonprescription Drugs"
+		if "`cat_abbr'" == "PreDrugs" local catname "Prescription Drugs"
+		if "`cat_abbr'" == "Substandard" local catname "Substandard Drugs"
+		if "`cat_abbr'" == "AllPharma" local catname "Other Pharmaceutical Topics"
+	*=====*
 
 			#delimit ;
 			tw (line sh_pubs year if dis_abbr == "`abbr'" & cat2 == "`catname'" 
@@ -1641,18 +1713,19 @@ pause
 				legend(order(1 "NIH Presence" 2 "No NIH Presence" 3 "No Public Presence") r(1))
 				yti("Share of Non-Trial Pubs Also About" "`catname' (%)" " ")
 				title("`dis'") xti("") subti("`journals'");
-			graph export "ts_cat2_bydisease`QA'_`abbr'_`cat_abbr'.png",
+			graph export "ts_`list'_bydisease`QA'_`abbr'_`cat_abbr'.png",
 				replace as(png) wid(1200) hei(800);
 			#delimit cr
 	} // end cat2 loop
 	} // end diseases loop
-*/
+
 	collapse (sum) n_pubs, by(cat2 nih year)
 	bys nih year: egen tot_pubs = total(n_pubs)
 		gen sh_pubs = n_pubs/tot_pubs*100
 
 	foreach cat_abbr of local categories {
-
+	*=====*
+		*---* If All Secondary Categories *---*
 		if "`cat_abbr'" == "BioPhenom" local catname "Biological Processes" 
 		if "`cat_abbr'" == "CellsOrgs" local catname "Cells & Organisms" 
 		if "`cat_abbr'" == "Chemicals" local catname "Chemicals (excl. Pharmaceuticals)" 
@@ -1662,7 +1735,33 @@ pause
 		if "`cat_abbr'" == "Tech" local catname "Medical Technology & Equipment" 
 		if "`cat_abbr'" == "Pharma" local catname "Pharmaceuticals" 
 		if "`cat_abbr'" == "Mult" local catname "Multiple Categories (excl. Pharma)" 
-		if "`cat_abbr'" == "None" local catname "Other/None" 
+		if "`cat_abbr'" == "None" local catname "Other/None"
+
+		*---* If Breaking Down Medical Equipment & Techniques *---*
+		if "`cat_abbr'" == "Anesth" local catname "Anesthesia Only"
+		if "`cat_abbr'" == "Dent" local catname "Dentistry Only"
+		if "`cat_abbr'" == "Diagnosis" local catname "Diagnosis Only"
+		if "`cat_abbr'" == "Equipment" local catname "Equipment Only"
+		if "`cat_abbr'" == "Inv" local catname "Investigative Techniques Only"
+		if "`cat_abbr'" == "Surg" local catname "Surgical Procedures Only"
+		if "`cat_abbr'" == "Therap" local catname "Therapeutics Only"
+		if "`cat_abbr'" == "AllTech" local catname "Other Equipment & Techniques Topics"
+
+		*---* If Breaking Down Pharmaceutical Preparations *---* 
+		if "`cat_abbr'" == "ContSub" local catname "Controlled Substances"
+		if "`cat_abbr'" == "Dosage" local catname "Dosage Forms"
+		if "`cat_abbr'" == "Combos" local catname "Drug Combinations"
+		if "`cat_abbr'" == "NatDrugs" local catname "Traditional/Homeopathic Remedies"
+		if "`cat_abbr'" == "EssDrugs" local catname "Essential Drugs"
+		if "`cat_abbr'" == "GenDrugs" local catname "Generic Drugs"
+		if "`cat_abbr'" == "InvDrugs" local catname "Investigational Drugs"
+		if "`cat_abbr'" == "IllicitDrugs" local catname "Illegal Drugs & Marijuana"
+		if "`cat_abbr'" == "NonpreDrugs" local catname "Nonprescription Drugs"
+		if "`cat_abbr'" == "PreDrugs" local catname "Prescription Drugs"
+		if "`cat_abbr'" == "Substandard" local catname "Substandard Drugs"
+		if "`cat_abbr'" == "AllPharma" local catname "Other Pharmaceutical Topics"
+	*=====*		
+
 
 			#delimit ;
 			tw (line sh_pubs year if cat2 == "`catname'" & nih == 1, lc(red))
@@ -1673,11 +1772,11 @@ pause
 				legend(order(1 "NIH Presence" 2 "No NIH Presence" 3 "No Public Presence") r(1))
 				yti("Share of Non-Trial Pubs Also About" "`catname' (%)" " ")
 				title("All Diseases") xti("") subti("`journals'");
-			graph export "ts_cat2_bydisease`QA'_all_`cat_abbr'.png",
+			graph export "ts_`list'_bydisease`QA'_all_`cat_abbr'.png",
 				replace as(png) wid(1200) hei(800);
 			#delimit cr
 	} // end cat2 loop
-
+} // end list loop
 } // end QA/notQA loop
 *-------------------------
 } // end ts_bydisease
@@ -1759,14 +1858,16 @@ foreach QA in "" "_notQA" {
 			replace catcode = 17 if cat2 == "Physiology"
 		replace cat2 = "Psychology" if cat2 == "psychology"
 			replace catcode = 18 if cat2 == "Psychology"
-		replace cat2 = "Radiation" if cat2 == "radiation"
-			replace catcode = 19 if cat2 == "Radiation"
+		/*replace cat2 = "Radiation" if cat2 == "radiation"
+			replace catcode = 19 if cat2 == "Radiation" // 0 papers it seems */
 		replace cat2 = "Statistics & Data" if cat2 == "stats"
-			replace catcode = 20 if cat2 == "Statistics & Data"
-		replace cat2 = "Therapy" if cat2 == "therapy"
-			replace catcode = 21 if cat2 == "Therapy"
-		replace cat2 = "Multiple Subheadings" if cat2 == "mult"
-			replace catcode = 22 if cat2 == "Multiple Subheadings"
+			replace catcode = 19 if cat2 == "Statistics & Data"
+		replace cat2 = "Therapy Only" if cat2 == "therapy"
+			replace catcode = 20 if cat2 == "Therapy Only"
+		replace cat2 = "Therapy And Others" if cat2 == "therapy_and"
+			replace catcode = 21 if cat2 == "Therapy And Others"
+		replace cat2 = "Multiple (exc. Therapy)" if cat2 == "mult"
+			replace catcode = 22 if cat2 == "Multiple (exc. Therapy)"
 		replace cat2 = "No Subheadings" if cat2 == "none"
 			replace catcode = 23 if cat2 == "No Subheadings"
 
@@ -1812,8 +1913,8 @@ foreach QA in "" "_notQA" {
 						pie(10, c(gs8)) pie(11, c(gs5)) pie(12, c(gs8))
 						pie(13, c(gs5)) pie(14, c(gs8)) pie(15, c(gs5))
 						pie(16, c(gs8)) pie(17, c(cranberry)) pie(18, c(gs8))
-						pie(19, c(gs5)) pie(20, c(midblue)) pie(21, c(purple))
-						pie(22, c(gs8)) pie(23, c(gs5));
+						pie(19, c(gs5)) pie(20, c(blue)) pie(21, c(midblue))
+						pie(22, c(purple)) pie(23, c(gs5));
 			graph export "pies_bydisease`QA'_`abbr'_nih`nih01'_sub.png",
 				replace as(png) wid(1200) hei(800);
 			#delimit cr
