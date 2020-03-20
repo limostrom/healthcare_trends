@@ -25,9 +25,10 @@ local all_1980 0
 local all_2005 0
 local pies 0
 local pies_bydisease 0
-local ts_bydisease 1
+local ts_bydisease 0
 local pies_bydisease_sub 0
 local nih_vs_priv 0
+local drugs_and_devices 1
 
 *=======================================================================
 *					DISEASE CATEGORIES (BODY SYSTEMS)
@@ -1429,8 +1430,8 @@ foreach maj in "" /*"_notmaj"*/ {
 			replace catcode = 5 if cat2 == "Health Administration"
 		replace cat2 = "Health Econ & Organizations" if cat2 == "HealthEcon"
 			replace catcode = 6 if cat2 == "Health Econ & Organizations"
-		replace cat2 = "Medical Technology & Equipment" if cat2 == "Tech"
-			replace catcode = 7 if cat2 == "Medical Technology & Equipment"
+		replace cat2 = "Medical Equipment & Techniques" if cat2 == "Tech"
+			replace catcode = 7 if cat2 == "Medical Equipment & Techniques"
 		replace cat2 = "Pharmaceuticals" if cat2 == "Pharma"
 			replace catcode = 8 if cat2 == "Pharmaceuticals"
 		replace cat2 = "Multiple Categories (excl. Pharma)" if cat2 == "Mult"
@@ -1438,10 +1439,10 @@ foreach maj in "" /*"_notmaj"*/ {
 		replace cat2 = "Other/None" if cat2 == "None"
 			replace catcode = 10 if cat2 == "Other/None"
 
-	*levelsof dis_abbr, local(diseases) clean
+	levelsof dis_abbr, local(diseases) clean
 
 	*Only testing subset of diseases by decade:
-	local diseases "Cardio Neoplasms Neurologic Substance Tropic OthInfectious"
+	*local diseases "Cardio Neoplasms Neurologic Substance Tropic OthInfectious"
 
 	foreach abbr of local diseases {
 
@@ -1503,22 +1504,22 @@ foreach maj in "" /*"_notmaj"*/ {
 			if `nih01' == 0 local funder = "Non-NIH-Funded"
 			if `nih01' == 1 local funder = "NIH-Funded"
 
-		forval dec = 1980(10)2010 {
+		/*forval dec = 1980(10)2010 {*/
 
 			#delimit ;
-			graph pie n_pubs if dis_abbr == "`abbr'" & nih == `nih01' & decade == `dec',
+			graph pie n_pubs if dis_abbr == "`abbr'" & nih == `nih01' /*& decade == `dec'*/,
 						over(cat2) sort(catcode) legend(colfirst)
 						title("`funder' Non-Trial Publications" "About `dis'")
-						subtitle("By Additional Major Topic" "`journals'" "`dec's")
+						subtitle("By Additional Major Topic" "`journals'" /*"`dec's"*/)
 						`pielabels'
 						pie(1, c(dkgreen)) pie(2, c(erose)) pie(3, c(navy))
 						pie(4, c(midgreen)) pie(5, c(dkorange)) pie(6, c(eltblue))
 						pie(7, c(gs5)) pie(8, c(cranberry))
 						pie(9, c(purple)) pie(10, c(gs8));
-			graph export "pie_bydisease`QA'_`abbr'_nih`nih01'`maj'_`dec's.png",
+			graph export "pie_bydisease`QA'_`abbr'_nih`nih01'`maj'.png",
 				replace as(png) wid(1200) hei(800);
 			#delimit cr
-		} // end decade loop
+		/*}*/ // end decade loop
 		} // end NIH/non-NIH loop
 
 	} // end diseases loop
@@ -1589,8 +1590,8 @@ foreach list in "by2ndcat" "medtech_subcats" "pharma_subcats" {
 			replace catcode = 5 if cat2 == "Health Administration"
 		replace cat2 = "Health Econ & Organizations" if cat2 == "HealthEcon"
 			replace catcode = 6 if cat2 == "Health Econ & Organizations"
-		replace cat2 = "Medical Technology & Equipment" if cat2 == "Tech"
-			replace catcode = 7 if cat2 == "Medical Technology & Equipment"
+		replace cat2 = "Medical Equipment & Techniques" if cat2 == "Tech"
+			replace catcode = 7 if cat2 == "MedicalEquipment & Techniques"
 		replace cat2 = "Pharmaceuticals" if cat2 == "Pharma"
 			replace catcode = 8 if cat2 == "Pharmaceuticals"
 		replace cat2 = "Multiple Categories (excl. Pharma)" if cat2 == "Mult"
@@ -1599,8 +1600,8 @@ foreach list in "by2ndcat" "medtech_subcats" "pharma_subcats" {
 			replace catcode = 10 if cat2 == "Other/None"
 
 	*---* If Breaking Down Medical Equipment & Techniques *---*
-		replace cat2 = "Anesthesia Only" if cat2 == "Anesth"
-			replace catcode = 1 if cat2 == "Anesthesia Only"
+		replace cat2 = "Anesthesia & Analgesia Only" if cat2 == "Anesth"
+			replace catcode = 1 if cat2 == "Anesthesia & Analgesia Only"
 		replace cat2 = "Dentistry Only" if cat2 == "Dent"
 			replace catcode = 2 if cat2 == "Dentistry Only"
 		replace cat2 = "Diagnosis Only" if cat2 == "Diagnosis"
@@ -1673,13 +1674,13 @@ foreach list in "by2ndcat" "medtech_subcats" "pharma_subcats" {
 		if "`cat_abbr'" == "EnvPH" local catname "Environment & Public Health" 
 		if "`cat_abbr'" == "HealthAdmin" local catname "Health Administration" 
 		if "`cat_abbr'" == "HealthEcon" local catname "Health Econ & Organizations" 
-		if "`cat_abbr'" == "Tech" local catname "Medical Technology & Equipment" 
+		if "`cat_abbr'" == "Tech" local catname "Medical Equipment & Techniques" 
 		if "`cat_abbr'" == "Pharma" local catname "Pharmaceuticals" 
 		if "`cat_abbr'" == "Mult" local catname "Multiple Categories (excl. Pharma)" 
 		if "`cat_abbr'" == "None" local catname "Other/None"
 
 		*---* If Breaking Down Medical Equipment & Techniques *---*
-		if "`cat_abbr'" == "Anesth" local catname "Anesthesia Only"
+		if "`cat_abbr'" == "Anesth" local catname "Anesthesia & Analgesia Only"
 		if "`cat_abbr'" == "Dent" local catname "Dentistry Only"
 		if "`cat_abbr'" == "Diagnosis" local catname "Diagnosis Only"
 		if "`cat_abbr'" == "Equipment" local catname "Equipment Only"
@@ -1732,13 +1733,13 @@ foreach list in "by2ndcat" "medtech_subcats" "pharma_subcats" {
 		if "`cat_abbr'" == "EnvPH" local catname "Environment & Public Health" 
 		if "`cat_abbr'" == "HealthAdmin" local catname "Health Administration" 
 		if "`cat_abbr'" == "HealthEcon" local catname "Health Econ & Organizations" 
-		if "`cat_abbr'" == "Tech" local catname "Medical Technology & Equipment" 
+		if "`cat_abbr'" == "Tech" local catname "Medical Equipment & Techniques" 
 		if "`cat_abbr'" == "Pharma" local catname "Pharmaceuticals" 
 		if "`cat_abbr'" == "Mult" local catname "Multiple Categories (excl. Pharma)" 
 		if "`cat_abbr'" == "None" local catname "Other/None"
 
 		*---* If Breaking Down Medical Equipment & Techniques *---*
-		if "`cat_abbr'" == "Anesth" local catname "Anesthesia Only"
+		if "`cat_abbr'" == "Anesth" local catname "Anesthesia & Analgesia Only"
 		if "`cat_abbr'" == "Dent" local catname "Dentistry Only"
 		if "`cat_abbr'" == "Diagnosis" local catname "Diagnosis Only"
 		if "`cat_abbr'" == "Equipment" local catname "Equipment Only"
@@ -1787,8 +1788,9 @@ if `pies_bydisease_sub' == 1 {
 *-------------------------
 cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
 
+foreach list in "_sub" "_sub_therapy" {
 foreach QA in "" "_notQA" {
-	use "Master_dta/pmids_by_sub2ndcat.dta", clear
+	use "Master_dta/pmids_by`list'2ndcat.dta", clear
 		drop if pmid == . // not that many (73)
 		duplicates tag pmid query_name, gen(dup)
 			bys pmid query_name: egen max_year = max(year)
@@ -1796,7 +1798,9 @@ foreach QA in "" "_notQA" {
 			drop dup
 			isid pmid query_name
 		duplicates tag pmid, gen(dup)
-			drop if dup > 0 & (query_name == "mult" | query_name == "therapy_and")
+			if "`list'" == "_sub" ///
+				drop if dup > 0 & (query_name == "mult" | query_name == "therapy_and")
+			if "`list'" == "_sub_therapy" drop if dup > 0 & query_name == "alltherapy"
 			drop dup
 		isid pmid
 
@@ -1822,54 +1826,43 @@ foreach QA in "" "_notQA" {
 	reshape wide n_pubs, i(dis_abbr nih) j(cat2) string
 	reshape long n_pubs, i(dis_abbr nih) j(cat2) string
 	replace n_pubs = 0 if n_pubs == .
-		replace cat2 = "Analysis" if cat2 == "analysis"
-			gen catcode = 1 if cat2 == "Analysis"
-		replace cat2 = "Anatomy & Histology" if cat2 == "anatomy_histology"
-			replace catcode = 2 if cat2 == "Anatomy & Histology"
-		replace cat2 = "Chemistry" if cat2 == "chemistry"
-			replace catcode = 3 if cat2 == "Chemistry"
-		replace cat2 = "Classification" if cat2 == "classification"
-			replace catcode = 4 if cat2 == "Classification"
+
+	*=====*
+		*---* All Subheadings *---*
+		replace cat2 = "Other Subheadings" ///
+				if !inlist(cat2, "diagnosis", "physiology", "therapy", "therapy_and", "mult", "none") ///
+					& "`list'" == "_sub"
+			gen catcode = 5 if cat2 == "Other Subheadings"
 		replace cat2 = "Diagnosis" if cat2 == "diagnosis"
-			replace catcode = 5 if cat2 == "Diagnosis"
-		replace cat2 = "Drug Effects" if cat2 == "drug_effects"
-			replace catcode = 6 if cat2 == "Drug Effects"
-		replace cat2 = "Education" if cat2 == "education"
-			replace catcode = 7 if cat2 == "Education"
-		replace cat2 = "Ethics" if cat2 == "ethics"
-			replace catcode = 8 if cat2 == "Ethics"
-		replace cat2 = "Etiology" if cat2 == "etiology"
-			replace catcode = 9 if cat2 == "Etiology"
-		replace cat2 = "History" if cat2 == "history"
-			replace catcode = 10 if cat2 == "History"
-		replace cat2 = "Injuries" if cat2 == "injuries"
-			replace catcode = 11 if cat2 == "Injuries"
-		replace cat2 = "Instrumentation" if cat2 == "instrumentation"
-			replace catcode = 12 if cat2 == "Instrumentation"
-		replace cat2 = "Methods" if cat2 == "methods"
-			replace catcode = 13 if cat2 == "Methods"
-		replace cat2 = "Organization & Admin" if cat2 == "org_and_admin"
-			replace catcode = 14 if cat2 == "Organization & Admin"
-		replace cat2 = "Pathogenicity" if cat2 == "pathogenicity"
-			replace catcode = 15 if cat2 == "Pathogenicity"
-		replace cat2 = "Pharmacology" if cat2 == "pharmacology"
-			replace catcode = 16 if cat2 == "Pharmacology"
+			replace catcode = 1 if cat2 == "Diagnosis"
 		replace cat2 = "Physiology" if cat2 == "physiology"
-			replace catcode = 17 if cat2 == "Physiology"
-		replace cat2 = "Psychology" if cat2 == "psychology"
-			replace catcode = 18 if cat2 == "Psychology"
-		/*replace cat2 = "Radiation" if cat2 == "radiation"
-			replace catcode = 19 if cat2 == "Radiation" // 0 papers it seems */
-		replace cat2 = "Statistics & Data" if cat2 == "stats"
-			replace catcode = 19 if cat2 == "Statistics & Data"
+			replace catcode = 2 if cat2 == "Physiology"
 		replace cat2 = "Therapy Only" if cat2 == "therapy"
-			replace catcode = 20 if cat2 == "Therapy Only"
+			replace catcode = 3 if cat2 == "Therapy Only"
 		replace cat2 = "Therapy And Others" if cat2 == "therapy_and"
-			replace catcode = 21 if cat2 == "Therapy And Others"
+			replace catcode = 4 if cat2 == "Therapy And Others"
 		replace cat2 = "Multiple (exc. Therapy)" if cat2 == "mult"
-			replace catcode = 22 if cat2 == "Multiple (exc. Therapy)"
-		replace cat2 = "No Subheadings" if cat2 == "none"
-			replace catcode = 23 if cat2 == "No Subheadings"
+			replace catcode = 6 if cat2 == "Multiple (exc. Therapy)"
+		replace cat2 = "No Subheadings" if cat2 == "none" & "`list'" == "_sub"
+			replace catcode = 7 if cat2 == "No Subheadings"
+
+		*---* Therapy-Related Subheadings Only *---*
+		replace cat2 = "Other Therapy Subheading" ///
+				if inlist(cat2, "dosage", "poisoning", "diet", "nursing", "radio", "rehab")
+			replace catcode = 5 if cat2 == "Other Therapy Subheading"
+		replace cat2 = "Adverse Effects of Treatment" if cat2 == "adverse"
+			replace catcode = 1 if cat2 == "Adverse Effects of Treatment"
+		replace cat2 = "Drug Therapy" if cat2 == "drugs"
+			replace catcode = 2 if cat2 == "Drug Therapy"
+		replace cat2 = "Prevention & Control" if cat2 == "prevention"
+			replace catcode = 3 if cat2 == "Prevention & Control"
+		replace cat2 = "Surgery" if cat2 == "surgery"
+			replace catcode = 4 if cat2 == "Surgery"
+		replace cat2 = "General Therapy Subheading" if cat2 == "alltherapy"
+			replace catcode = 6 if cat2 == "General Therapy Subheading"
+		replace cat2 = "No Therapy Subheading" if cat2 == "none" & "`list'" == "_sub_therapy"
+			replace catcode = 7 if cat2 == "No Therapy Subheading"
+	*=====*
 
 	levelsof dis_abbr, local(diseases) clean
 
@@ -1901,21 +1894,44 @@ foreach QA in "" "_notQA" {
 
 		/*forval dec = 1980(10)2010 {*/
 
+		if "`list'" == "_sub" {
+			local slice_colors "pie(1, c(dkorange)) pie(2, c(dkgreen)) pie(3, c(midblue)) pie(4, c(navy)) pie(5, c(gs10)) pie(6, c(purple)) pie(7, c(gs8))"
+
+			local pielabs "pl(3 percent, c(white) format(%9.3g) gap(huge)) pl(4 percent, c(white) format(%9.3g)) pl(5 percent, c(white) format(%9.3g)) pl(6 percent, c(white) format(%9.3g))"
+		}
+
+		if "`list'" == "_sub_therapy" {
+			local slice_colors "pie(1, c(sienna)) pie(2, c(cranberry)) pie(3, c(navy)) pie(4, c(green)) pie(5, c(gs10)) pie(6, c(midblue)) pie(7, c(gs8))"
+
+			local pielabs "pl(6 percent, c(white) format(%9.3g)) pl(7 percent, c(white) format(%9.3g))"
+
+			if !inlist("`abbr'", "Tropic", "STIs") {
+				local pielabs "`pielabs' pl(1 percent, c(white) format(%9.3g) gap(huge))"
+			}
+			if !inlist("`abbr'", "Senses", "Substance") {
+				local pielabs "`pielabs' pl(2 percent, c(white) format(%9.3g))"
+			}
+
+			if inlist("`abbr'", "RespInf", "STIs", "Substance", "Tropic", "OthInfectious") {
+				local pielabs "`pielabs' pl(3 percent, c(white) format(%9.3g) gap(huge))"
+			}
+
+			if !inlist("`abbr'", "Mental", "Dementia", "RespInf", "STIs", "Substance", ///
+						"OthInfectious", "Tropic", "Pregnancy") | ///
+					("`abbr'" == "Pregnancy" & `nih01' == 0) {
+				local pielabs "`pielabs'  pl(4 percent, c(white) format(%9.3g))"
+			}
+		}
+
 			#delimit ;
 			graph pie n_pubs if dis_abbr == "`abbr'" & nih == `nih01' /*& decade == `dec'*/,
 						over(cat2) sort(catcode) legend(colfirst)
 						title("`funder' Non-Trial Publications" "About `dis'")
-						subtitle("By Additional Major Topic" "`journals'")
-						`pielabels'
-						pie(1, c(gs5)) pie(2, c(gs8)) pie(3, c(gs5))
-						pie(4, c(gs8)) pie(5, c(dkorange)) pie(6, c(gs8))
-						pie(7, c(gs5)) pie(8, c(gs8)) pie(9, c(gs5))
-						pie(10, c(gs8)) pie(11, c(gs5)) pie(12, c(gs8))
-						pie(13, c(gs5)) pie(14, c(gs8)) pie(15, c(gs5))
-						pie(16, c(gs8)) pie(17, c(cranberry)) pie(18, c(gs8))
-						pie(19, c(gs5)) pie(20, c(blue)) pie(21, c(midblue))
-						pie(22, c(purple)) pie(23, c(gs5));
-			graph export "pies_bydisease`QA'_`abbr'_nih`nih01'_sub.png",
+						subtitle("By Subheading" "`journals'")
+						`pielabs' `slice_colors'
+						legend(size(small) symx(small) symy(small) forcesize);
+			graph save "gphs/pies_bydisease`QA'_`abbr'_nih`nih01'`list'.gph", replace;
+			graph export "pies_bydisease`QA'_`abbr'_nih`nih01'`list'.png",
 				replace as(png) wid(1200) hei(800);
 			#delimit cr
 		/*}*/ // end decade loop
@@ -1923,6 +1939,25 @@ foreach QA in "" "_notQA" {
 
 	} // end diseases loop
 } // end QA/notQA loop
+
+	foreach abbr of local diseases {
+
+		#delimit ;
+		grc1leg "gphs/pies_bydisease_`abbr'_nih1`list'.gph"
+				"gphs/pies_bydisease_notQA_`abbr'_nih1`list'.gph"
+				"gphs/pies_bydisease_`abbr'_nih0`list'.gph"
+				"gphs/pies_bydisease_notQA_`abbr'_nih0`list'.gph",
+			legendfrom("gphs/pies_bydisease_`abbr'_nih1`list'.gph")
+			colfirst r(2);
+		graph export "pies_combined`list'_bydisease_`abbr'.png", replace as(png) wid(1200) hei(700);
+		#delimit cr
+
+	} // end diseases loop
+
+} // end _sub / _sub_therapy loop
+
+
+
 *-------------------------
 } // end pies_bydisease_sub
 *-------------------------
@@ -2201,3 +2236,57 @@ foreach QA in /*""*/ "_notQA" {
 *-------------------------
 }
 *-------------------------
+
+*======================================================================================
+
+*-----------------------------
+if `drugs_and_devices' == 1 {
+*-----------------------------
+cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
+
+import delimited "PubMed_Search_Results_drugs_devices_notQA_from1980.csv", clear varn(1)
+
+split query_name, p("_")
+drop query_name
+ren query_name1 query_name
+ren query_name2 pub_type
+
+collapse (sum) pub_count, by(query_name pub_type)
+
+bys pub_type: egen counted = sum(pub_count) if query_name != "tot"
+	bys pub_type: ereplace counted = max(counted)
+
+	replace pub_count = pub_count-counted if query_name == "tot"
+	replace query_name = "other" if query_name == "tot"
+
+gen qcode = 1 if query_name == "drugs"
+	replace query_name = "Drugs (Not Devices)" if query_name == "drugs"
+replace qcode = 2 if query_name == "drugs-and-dev"
+	replace query_name = "Drugs & Devices" if query_name == "drugs-and-dev"
+replace qcode = 3 if query_name == "devices"
+	replace query_name = "Devices (Not Drugs)" if query_name == "devices"
+replace qcode = 4 if query_name == "dev-and-surg"
+	replace query_name = "Devices & Surgery (Not Drugs)" if query_name == "dev-and-surg"
+replace qcode = 5 if query_name == "surgery"
+	replace query_name = "Surgery Only" if query_name == "surgery"
+replace qcode = 6 if query_name == "treatment"
+	replace query_name = "Non-Drug Treatments Only" if query_name == "treatment"
+replace qcode = 7 if query_name == "healthcare"
+	replace query_name = "Healthcare Delivery Only" if query_name == "healthcare"
+replace qcode = 8 if query_name == "other"
+	replace query_name = "Other" if query_name == "other"
+
+graph pie pub_count if pub_type == "CT", over(query_name) sort(qcode) ///
+	pl(1 percent, c(white) format(%9.3g)) ///
+	pl(3 percent, c(white) format(%9.3g)) ///
+	pl(5 percent, c(white) format(%9.3g)) ///
+	pl(6 percent, c(white) format(%9.3g)) ///
+	pl(7 percent, c(white) format(%9.3g)) ///
+	title("Clinical Studies") subtitle("(All Journals)") legend(colfirst) ///
+	pie(1, c(cranberry)) pie(2, c(magenta)) pie(3, c(purple)) ///
+	pie(4, c(lime)) pie(5, c(green)) pie(6, c(midblue)) ///
+	pie(7, c(dkorange)) pie(8, c(gs8))
+
+*-----------------------------
+} // end `drugs_and_devices'
+*-----------------------------
