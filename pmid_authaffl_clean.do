@@ -357,8 +357,8 @@ foreach from in "1980" "2005" {
 */
 *-----* Read in list of PMIDs by secondary categories (Pharma, Chem, Cells, Pharmacology, Phenomena) *-----*
 *		these are for the pie charts by disease of additional MeSH categories
-/*
-foreach sub in /*""*/ "_sub" /*"_notmaj"*/ {
+
+foreach sub in /*"" "_sub"*/ "_sub_therapy" /*"_notmaj"*/ {
 	local filelist: dir "PMIDs/PieCharts/" files "PMIDs_dis`sub'_pies_*.csv"
 
 	local i = 1
@@ -391,10 +391,10 @@ foreach sub in /*""*/ "_sub" /*"_notmaj"*/ {
 
 	save "Master_dta/pmids_by`sub'2ndcat.dta", replace
 }
-*/
+
 *-----* Read in list of PMIDs by secondary categories (Pharma, Chem, Cells, Pharmacology, Phenomena) *-----*
 *		these are for the pie charts by disease of additional MeSH categories
-
+/*
 foreach cat in "medtech" "pharma" {
 	local filelist: dir "PMIDs/PieCharts/" files "PMIDs_`cat'_*.csv"
 
@@ -429,7 +429,7 @@ foreach cat in "medtech" "pharma" {
 
 	save "Master_dta/pmids_`cat'_subcats.dta", replace
 }
-
+*/
 *-----* Read in scraped dates, journals, pub types, grant codes, and author affiliations *-----*
 /*
 local filelist: dir "Master_dta/" files "raw_*.csv"
