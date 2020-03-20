@@ -30,9 +30,9 @@ api_parse = function(query){
 start_year = 1980
 
 # set to econ or diseases:
-group_term = "piecharts"
+group_term = "drugs_devices_notQA"
 
-years = as.character(start_year:2018)
+years = as.character(start_year:2019)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
 
 infile = paste0('GitHub/healthcare_trends/search_terms_',
@@ -109,22 +109,27 @@ if (group_term == "topGBDs_clintr") {
 				'.csv')
 }
 if (group_term == "GBDlev2") {
-	outfile = paste0('Amitabh/PubMed_Search_Results_GBDlev2_from',
+	outfile = paste0('../Dropbox/Amitabh/PubMed_Search_Results_GBDlev2_from',
 				as.character(start_year),
 				'.csv')
 }
 if (group_term == "GBDlev2_notQA") {
-	outfile = paste0('Amitabh/PubMed_Search_Results_GBDlev2_notQA_from',
+	outfile = paste0('../Dropbox/Amitabh/PubMed_Search_Results_GBDlev2_notQA_from',
 				as.character(start_year),
 				'.csv')
 }
 if (group_term == "GBDlev2_clintr") {
-	outfile = paste0('Amitabh/PubMed_Search_Results_CT_GBDlev2_from',
+	outfile = paste0('../Dropbox/Amitabh/PubMed_Search_Results_CT_GBDlev2_from',
 				as.character(start_year),
 				'.csv')
 }
 if (group_term == "GBDlev2_clintr_notQA") {
-	outfile = paste0('Amitabh/PubMed_Search_Results_CT_GBDlev2_notQA_from',
+	outfile = paste0('../Dropbox/Amitabh/PubMed_Search_Results_CT_GBDlev2_notQA_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "drugs_devices_notQA") {
+	outfile = paste0('../Dropbox/Amitabh/PubMed_Search_Results_drugs_devices_notQA_from',
 				as.character(start_year),
 				'.csv')
 }
@@ -139,7 +144,7 @@ if (group_term == "piecharts") {
 				'.csv')
 }
 if (group_term == "piecharts_notQA") {
-	outfile = paste0('Amitabh/PubMed_Search_Results_forPies_notQA_from',
+	outfile = paste0('../Dropbox/Amitabh/PubMed_Search_Results_forPies_notQA_from',
 				as.character(start_year),
 				'.csv')
 }
