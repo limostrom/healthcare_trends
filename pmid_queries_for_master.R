@@ -187,7 +187,7 @@ pull_affs = function(id) {
 }
 ## --------------------------------------------------------------------
 # Author affiliations only reliably show up from 1988 on
-years = as.character(2005:2018)
+years = as.character(2019)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
 
 #list of queries to run year by year
@@ -199,8 +199,9 @@ queries = paste0(year_queries, ' AND ', queries)
 query_names = paste0(query_names, years)
 
 #Run through scraping function to pull out PMIDs
-PMIDs = sapply(X = queries, FUN = pull_pmids) %>%
+PMIDs = sapply(X = year_queries, FUN = pull_pmids_samp5) %>%
 	unname()
+PMIDs = as.numeric(PMIDs)
 for (i in 1:length(query_names)) {
 	outfile = paste0('Amitabh/PMIDs/master/PMIDs_GBDlev2_clintr_notQA_from2005_',
 				query_names[i],
@@ -209,11 +210,15 @@ for (i in 1:length(query_names)) {
 	write_csv(subset, outfile)
 }
 # (for testing purposes only) PMIDs = c(22368089, 31856095)
+
+write_csv(as.data.frame(PMIDs), path = '../Dropbox/Amitabh/PMIDs/PMIDs_master_2019.csv')
+
 PMIDs = read_csv('../Dropbox/Amitabh/PMIDs/PMIDs_master_samp4pct.csv')
-info = sapply(X = unlist(PMIDs)[600001:610000], FUN = pull_affs)
-master = data.frame(pmid = unlist(PMIDs)[600001:610000], date = info[1,], mesh = info[2,],
+PMIDs = read_csv('../Dropbox/Amitabh/PMIDs/PMIDs_master_2019.csv')
+info = sapply(X = PMIDs[1:10000], FUN = pull_affs)
+master = data.frame(pmid = PMIDs[1:10000], date = info[1,], mesh = info[2,],
 				journal=info[3,], affil=info[4,], pt = info[5,], gr = info[6,])
 
-write_csv(master, path = '../Dropbox/Amitabh/Master_dta/raw_4pct_600001_610000.csv')
+write_csv(master, path = '../Dropbox/Amitabh/Master_dta/raw_2019_1_10000.csv')
 
 
