@@ -187,23 +187,25 @@ pull_affs = function(id) {
 }
 ## --------------------------------------------------------------------
 # Author affiliations only reliably show up from 1988 on
-years = as.character(2019)
+years = as.character(1980:2019)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
 
 #list of queries to run year by year
-queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_GBDlev2_clintr_notQA_2005.txt')
-queries = rep(queries_sub$Query, each=length(year_queries))
-query_names = rep(queries_sub$Query_Name, each=length(year_queries))
+queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_drugs_devices_notQA_1980.txt')
+	# for non-drug therapies & chemicals only
+	
+queries = rep(queries_sub$Query[13:17], each=length(year_queries))
+query_names = rep(queries_sub$Query_Name[13:17], each=length(year_queries))
 
 queries = paste0(year_queries, ' AND ', queries)
 query_names = paste0(query_names, years)
 
 #Run through scraping function to pull out PMIDs
-PMIDs = sapply(X = year_queries, FUN = pull_pmids_samp5) %>%
+PMIDs = sapply(X = queries, FUN = pull_pmids) %>%
 	unname()
 PMIDs = as.numeric(PMIDs)
 for (i in 1:length(query_names)) {
-	outfile = paste0('Amitabh/PMIDs/master/PMIDs_GBDlev2_clintr_notQA_from2005_',
+	outfile = paste0('../Dropbox/Amitabh/PubMed/PMIDs/PieCharts/PMIDs_drugs_devices_',
 				query_names[i],
 				'.csv')
 	subset = data.frame(unlist(PMIDs[i]), rep(query_names[i], length(unlist(PMIDs[i]))))
