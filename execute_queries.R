@@ -148,6 +148,16 @@ if (group_term == "piecharts_notQA") {
 				as.character(start_year),
 				'.csv')
 }
+if (group_term == "basic_translational") {
+	outfile = paste0('../Dropbox/Amitabh/PubMed_Search_Results_Ba-Tr-Cl_from',
+				as.character(start_year),
+				'.csv')
+}
+if (group_term == "basic_translational_notQA") {
+	outfile = paste0('../Dropbox/Amitabh/PubMed_Search_Results_Ba-Tr-Cl_notQA_from',
+				as.character(start_year),
+				'.csv')
+}
 
 write_csv(data, path = outfile)
 
