@@ -28,8 +28,8 @@ local pies_bydisease 0
 local ts_bydisease 0
 local pies_bydisease_sub 0
 local nih_vs_priv 0
-local drugs_and_devices 0
-local ba_tr_cl 1
+local drugs_and_devices 1
+local ba_tr_cl 0
 
 *=======================================================================
 *					DISEASE CATEGORIES (BODY SYSTEMS)
@@ -2248,7 +2248,137 @@ cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
 import delimited "PubMed_Search_Results_drugs_devices_notQA_from1980.csv", clear varn(1)
 
 split query_name, p("_")
-drop query_name
+gen nih = query_name3 == "NIH"
+
+drop query_name query_name3
+ren query_name1 query_name
+ren query_name2 pub_type
+
+collapse (sum) pub_count, by(query_name pub_type nih)
+
+forval nih01 = 0/1 {
+	foreach pt in "CT" "Pub" {
+		preserve
+			keep if query_name == "tot" & pub_type == "`pt'" & nih == `nih01'
+			local N_`pt'`nih01': dis pub_count
+			dis "N `pt's, NIH = `nih01' : `N_`pt'`nih01''"
+		restore
+	}
+}
+
+drop if pub_type == "CT" & inlist(query_name, "therapy", "chem", "tot")
+drop if pub_type == "Pub" & inlist(query_name, "phys", "tot")
+
+bys pub_type nih: egen counted = sum(pub_count) if query_name != "tot"
+
+	/* When including an "Other" category
+	bys pub_type: ereplace counted = max(counted)
+
+	replace pub_count = pub_count-counted if query_name == "tot"
+	replace query_name = "other" if query_name == "tot"
+	*/
+
+forval nih01 = 0/1 {
+	foreach pt in "CT" "Pub" {
+		preserve
+			keep if pub_type == "`pt'" & nih == `nih01'
+			local n_`pt'`nih01': dis counted
+			dis "Shown `pt's, NIH = `nih01' : `n_`pt'`nih01''"
+		restore
+	}
+}
+
+gen qcode = 1 if query_name == "drugs"
+	replace query_name = "Drugs (Not Devices)" if query_name == "drugs"
+replace qcode = 2 if query_name == "drugs-and-dev"
+	replace query_name = "Drugs & Devices" if query_name == "drugs-and-dev"
+replace qcode = 3 if query_name == "devices"
+	replace query_name = "Devices (Not Drugs)" if query_name == "devices"
+replace qcode = 4 if query_name == "surgery"
+	replace query_name = "Surgery" if query_name == "surgery"
+replace qcode = 4 if query_name == "surg-and-hc"
+	replace query_name = "Surgery" if query_name == "surg-and-hc"
+replace qcode = 5 if query_name == "healthcare"
+	replace query_name = "Healthcare Delivery Only" if query_name == "healthcare"
+replace qcode = 6 if query_name == "therapy"
+	replace query_name = "Non-Drug Therapies Only" if query_name == "therapy"
+replace qcode = 7 if query_name == "chem"
+	replace query_name = "Non-Drug Chemicals Only" if query_name == "chem"
+replace qcode = 8 if query_name == "bio"
+	replace query_name = "Biological Phenomena Only" if query_name == "bio"
+
+forval nih01 = 0/1 {
+
+	if `nih01' == 0 local fund "Not Funded by NIH"
+	if `nih01' == 1 local fund "Funded by NIH"
+
+	graph pie pub_count if pub_type == "CT" & nih == `nih01', ///
+		over(query_name) sort(qcode) ///
+		pl(1 percent, c(white) format(%9.3g)) ///
+		pl(3 percent, c(white) format(%9.3g)) ///
+		pl(4 percent, c(white) format(%9.3g)) ///
+		pl(5 percent, c(white) format(%9.3g)) ///
+		title("Clinical Trials (II & III) `fund'") legend(colfirst) ///
+		subtitle("All Journals" "Shown: `n_CT`nih01'' of `N_CT`nih01'' Trials") ///
+		pie(1, c(cranberry)) pie(2, c(magenta)) pie(3, c(purple)) ///
+		pie(4, c(dkgreen)) pie(5, c(dkorange))
+	graph export "pies_drugs_devices_CTs_nih`nih01'.png", replace as(png)
+
+	graph pie pub_count if pub_type == "Pub" & nih == `nih01', ///
+		over(query_name) sort(qcode) ///
+		pl(1 percent, c(white) format(%9.3g)) ///
+		pl(3 percent, c(white) format(%9.3g)) ///
+		pl(4 percent, c(white) format(%9.3g)) ///
+		pl(5 percent, c(white) format(%9.3g)) ///
+		pl(6 percent, c(white) format(%9.3g)) ///
+		pl(7 percent, c(white) format(%9.3g)) ///
+		pl(8 percent, c(white) format(%9.3g)) ///
+		title("Non-Trial Journal Articles `fund'") legend(colfirst) ///
+		subtitle("All Journals" "Shown: `n_Pub`nih01'' of `N_Pub`nih01'' Papers") ///
+		pie(1, c(cranberry)) pie(2, c(magenta)) pie(3, c(purple)) ///
+		pie(4, c(dkgreen)) pie(5, c(dkorange)) ///
+		pie(6, c(sienna)) pie(7, c(midblue)) pie(8, c(midgreen))
+	graph export "pies_drugs_devices_Pubs_nih`nih01'.png", replace as(png)
+}
+
+forval nih01 = 0/1 {
+	local N`nih01' = `N_CT`nih01'' + `N_Pub`nih01''
+	local n`nih01' = `n_CT`nih01'' + `n_Pub`nih01''
+}
+
+collapse (sum) pub_count, by(query_name qcode nih)
+preserve
+	collapse (sum) pub_count
+	assert pub_count == `n0' + `n1'
+restore
+
+forval nih01 = 0/1 {
+
+	if `nih01' == 0 local fund "Not Funded by NIH"
+	if `nih01' == 1 local fund "Funded by NIH"
+
+	graph pie pub_count if nih == `nih01', over(query_name) sort(qcode) ///
+		pl(1 percent, c(white) format(%9.3g)) ///
+		pl(3 percent, c(white) format(%9.3g)) ///
+		pl(4 percent, c(white) format(%9.3g)) ///
+		pl(5 percent, c(white) format(%9.3g)) ///
+		pl(6 percent, c(white) format(%9.3g)) ///
+		pl(7 percent, c(white) format(%9.3g)) ///
+		pl(8 percent, c(white) format(%9.3g)) ///
+		title("Journal Articles and Clinical Trials (II & III)" "`fund'") legend(colfirst) ///
+		subtitle("All Journals" "Shown: `n`nih01'' of `N`nih01'' Publications") ///
+		pie(1, c(cranberry)) pie(2, c(magenta)) pie(3, c(purple)) ///
+		pie(4, c(dkgreen)) pie(5, c(dkorange)) ///
+		pie(6, c(sienna)) pie(7, c(midblue)) pie(8, c(midgreen))
+	graph export "pies_drugs_devices_All_nih`nih01'.png", replace as(png)
+}
+
+*--------- Not Separated NIH/Not NIH -----------------*
+import delimited "PubMed_Search_Results_drugs_devices_notQA_from1980.csv", clear varn(1)
+
+split query_name, p("_")
+
+drop query_name query_name3
 ren query_name1 query_name
 ren query_name2 pub_type
 
@@ -2301,7 +2431,8 @@ replace qcode = 7 if query_name == "chem"
 replace qcode = 8 if query_name == "bio"
 	replace query_name = "Biological Phenomena Only" if query_name == "bio"
 
-graph pie pub_count if pub_type == "CT", over(query_name) sort(qcode) ///
+graph pie pub_count if pub_type == "CT", ///
+	over(query_name) sort(qcode) ///
 	pl(1 percent, c(white) format(%9.3g)) ///
 	pl(3 percent, c(white) format(%9.3g)) ///
 	pl(4 percent, c(white) format(%9.3g)) ///
@@ -2312,7 +2443,8 @@ graph pie pub_count if pub_type == "CT", over(query_name) sort(qcode) ///
 	pie(4, c(dkgreen)) pie(5, c(dkorange))
 graph export "pies_drugs_devices_CTs.png", replace as(png)
 
-graph pie pub_count if pub_type == "Pub", over(query_name) sort(qcode) ///
+graph pie pub_count if pub_type == "Pub", ///
+	over(query_name) sort(qcode) ///
 	pl(1 percent, c(white) format(%9.3g)) ///
 	pl(3 percent, c(white) format(%9.3g)) ///
 	pl(4 percent, c(white) format(%9.3g)) ///
@@ -2327,15 +2459,16 @@ graph pie pub_count if pub_type == "Pub", over(query_name) sort(qcode) ///
 	pie(6, c(sienna)) pie(7, c(midblue)) pie(8, c(midgreen))
 graph export "pies_drugs_devices_Pubs.png", replace as(png)
 
-local N = `N_CT' + `N_Pub'
-local n = `n_CT' + `n_Pub'
+local N`nih01' = `N_CT' + `N_Pub'
+local n`nih01' = `n_CT' + `n_Pub'
+
 collapse (sum) pub_count, by(query_name qcode)
 preserve
 	collapse (sum) pub_count
-	assert pub_count == `n'
+	assert pub_count == `n0' + `n1'
 restore
 
-graph pie pub_count , over(query_name) sort(qcode) ///
+graph pie pub_count, over(query_name) sort(qcode) ///
 	pl(1 percent, c(white) format(%9.3g)) ///
 	pl(3 percent, c(white) format(%9.3g)) ///
 	pl(4 percent, c(white) format(%9.3g)) ///
