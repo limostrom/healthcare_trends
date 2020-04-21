@@ -28,8 +28,8 @@ local pies_bydisease 0
 local ts_bydisease 0
 local pies_bydisease_sub 0
 local nih_vs_priv 0
-local drugs_and_devices 0
-local ba_tr_cl 1
+local drugs_and_devices 1
+local ba_tr_cl 0
 
 *=======================================================================
 *					DISEASE CATEGORIES (BODY SYSTEMS)
@@ -2314,32 +2314,43 @@ forval nih01 = 0/1 {
 
 	graph pie pub_count if pub_type == "CT" & nih == `nih01', ///
 		over(query_name) sort(qcode) ///
-		pl(1 percent, c(white) format(%9.3g)) ///
-		pl(3 percent, c(white) format(%9.3g)) ///
-		pl(4 percent, c(white) format(%9.3g)) ///
-		pl(5 percent, c(white) format(%9.3g)) ///
-		title("Clinical Trials (II & III) `fund'") legend(colfirst) ///
+		pl(1 percent, c(white) format(%9.3g) size(medsmall)) ///
+		pl(3 percent, c(white) format(%9.3g) size(medsmall)) ///
+		pl(4 percent, c(white) format(%9.3g) size(medsmall)) ///
+		pl(5 percent, c(white) format(%9.3g) size(medsmall)) ///
+		title("Clinical Trials (II & III)" "`fund'") legend(colfirst) ///
 		subtitle("All Journals" "Shown: `n_CT`nih01'' of `N_CT`nih01'' Trials") ///
 		pie(1, c(cranberry)) pie(2, c(magenta)) pie(3, c(purple)) ///
 		pie(4, c(dkgreen)) pie(5, c(dkorange))
+	graph save "PubMed/gphs/pies_drugs_devices_CTs_nih`nih01'.gph", replace
 	graph export "pies_drugs_devices_CTs_nih`nih01'.png", replace as(png)
 
 	graph pie pub_count if pub_type == "Pub" & nih == `nih01', ///
 		over(query_name) sort(qcode) ///
-		pl(1 percent, c(white) format(%9.3g)) ///
-		pl(3 percent, c(white) format(%9.3g)) ///
-		pl(4 percent, c(white) format(%9.3g)) ///
-		pl(5 percent, c(white) format(%9.3g)) ///
-		pl(6 percent, c(white) format(%9.3g)) ///
-		pl(7 percent, c(white) format(%9.3g)) ///
-		pl(8 percent, c(white) format(%9.3g)) ///
-		title("Non-Trial Journal Articles `fund'") legend(colfirst) ///
+		pl(1 percent, c(white) format(%9.3g) size(medsmall)) ///
+		pl(3 percent, c(white) format(%9.3g) size(medsmall)) ///
+		pl(4 percent, c(white) format(%9.3g) size(medsmall)) ///
+		pl(5 percent, c(white) format(%9.3g) size(medsmall)) ///
+		pl(6 percent, c(white) format(%9.3g) size(medsmall)) ///
+		pl(7 percent, c(white) format(%9.3g) size(medsmall)) ///
+		pl(8 percent, c(white) format(%9.3g) size(medsmall)) ///
+		title("Non-Trial Journal Articles" "`fund'") legend(colfirst) ///
 		subtitle("All Journals" "Shown: `n_Pub`nih01'' of `N_Pub`nih01'' Papers") ///
 		pie(1, c(cranberry)) pie(2, c(magenta)) pie(3, c(purple)) ///
 		pie(4, c(dkgreen)) pie(5, c(dkorange)) ///
 		pie(6, c(sienna)) pie(7, c(midblue)) pie(8, c(midgreen))
+	graph save "PubMed/gphs/pies_drugs_devices_Pubs_nih`nih01'.gph", replace
 	graph export "pies_drugs_devices_Pubs_nih`nih01'.png", replace as(png)
 }
+
+	grc1leg "PubMed/gphs/pies_drugs_devices_CTs_nih1.gph" ///
+			"PubMed/gphs/pies_drugs_devices_CTs_nih0.gph", r(1)
+	graph export "pies_drugs_devices_CTs_combined.png", replace as(png)
+
+	grc1leg "PubMed/gphs/pies_drugs_devices_Pubs_nih1.gph" ///
+			"PubMed/gphs/pies_drugs_devices_Pubs_nih0.gph", r(1)
+	graph export "pies_drugs_devices_Pubs_combined.png", replace as(png)
+
 
 forval nih01 = 0/1 {
 	local N`nih01' = `N_CT`nih01'' + `N_Pub`nih01''
@@ -2358,20 +2369,25 @@ forval nih01 = 0/1 {
 	if `nih01' == 1 local fund "Funded by NIH"
 
 	graph pie pub_count if nih == `nih01', over(query_name) sort(qcode) ///
-		pl(1 percent, c(white) format(%9.3g)) ///
-		pl(3 percent, c(white) format(%9.3g)) ///
-		pl(4 percent, c(white) format(%9.3g)) ///
-		pl(5 percent, c(white) format(%9.3g)) ///
-		pl(6 percent, c(white) format(%9.3g)) ///
-		pl(7 percent, c(white) format(%9.3g)) ///
-		pl(8 percent, c(white) format(%9.3g)) ///
+		pl(1 percent, c(white) format(%9.3g) size (medsmall) gap(medium)) ///
+		pl(3 percent, c(white) format(%9.3g) size (medsmall)) ///
+		pl(4 percent, c(white) format(%9.3g) size (medsmall)) ///
+		pl(5 percent, c(white) format(%9.3g) size (medsmall)) ///
+		pl(6 percent, c(white) format(%9.3g) size (medsmall)) ///
+		pl(7 percent, c(white) format(%9.3g) size (medsmall)) ///
+		pl(8 percent, c(white) format(%9.3g) size (medsmall)) ///
 		title("Journal Articles and Clinical Trials (II & III)" "`fund'") legend(colfirst) ///
 		subtitle("All Journals" "Shown: `n`nih01'' of `N`nih01'' Publications") ///
 		pie(1, c(cranberry)) pie(2, c(magenta)) pie(3, c(purple)) ///
 		pie(4, c(dkgreen)) pie(5, c(dkorange)) ///
 		pie(6, c(sienna)) pie(7, c(midblue)) pie(8, c(midgreen))
+	graph save "PubMed/gphs/pies_drugs_devices_All_nih`nih01'.gph", replace
 	graph export "pies_drugs_devices_All_nih`nih01'.png", replace as(png)
 }
+
+	grc1leg "PubMed/gphs/pies_drugs_devices_All_nih1.gph" ///
+			"PubMed/gphs/pies_drugs_devices_All_nih0.gph", r(1)
+	graph export "pies_drugs_devices_All_combined.png", replace as(png)
 
 *--------- Not Separated NIH/Not NIH -----------------*
 import delimited "PubMed_Search_Results_drugs_devices_notQA_from1980.csv", clear varn(1)
@@ -2529,7 +2545,7 @@ foreach QA in "" "_notQA" {
 	forval f = 0/1 {
 		forval dec = 1980(10)2010 {
 			preserve
-				keep if nih == `f' & decade == `dec'
+				keep if nih == `f' & decade == `dec' & query_name != "total"
 				local n_`dec'_`f': dis counted
 				dis "Shown `dec's `f's: `n_`dec'_`f''"
 			restore
