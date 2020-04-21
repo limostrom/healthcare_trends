@@ -28,8 +28,8 @@ local pies_bydisease 0
 local ts_bydisease 0
 local pies_bydisease_sub 0
 local nih_vs_priv 0
-local drugs_and_devices 1
-local ba_tr_cl 0
+local drugs_and_devices 0
+local ba_tr_cl 1
 
 *=======================================================================
 *					DISEASE CATEGORIES (BODY SYSTEMS)
@@ -2492,180 +2492,184 @@ if `ba_tr_cl' == 1 {
 *-----------------------------
 cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
 
-import delimited "PubMed_Search_Results_ba-tr-cl_notQA_from1980.csv", clear varn(1)
-pause
-
-split query_name, p("_")
-drop query_name
-ren query_name1 query_name
-	replace query_name = "clinical" ///
-		if inlist(query_name, "clinical1", "clinical2") // not needed anymore
-ren query_name2 fund
-	gen nih = fund == "NIH"
-	drop fund
-
-gen decade = int(year/10)*10
-
-*--------- BY DECADE AND FUNDING ---------*
-collapse (sum) pub_count, by(query_name nih decade)
-
-forval dec = 1980(10)2010 {
-	forval f = 0/1 {
-		preserve
-			keep if query_name == "total" & nih == `f' & decade == `dec'
-			local N_`dec'_`f': dis pub_count
-			dis "N `dec's `f's: `N_`dec'_`f''"
-		restore
-	}
-}
-
-bys decade nih: egen counted = sum(pub_count) if query_name != "total"
-
-forval dec = 1980(10)2010 {
-	forval f = 0/1 {
-		preserve
-			keep if nih == `f'
-			local n_`dec'_`f': dis counted
-			dis "Shown `dec's `f's: `n_`dec'_`f''"
-		restore
-	}
-}
-
-drop if query_name == "total"
-
-gen qcode = 1 if query_name == "basic"
-	replace query_name = "Basic Science" if query_name == "basic"
-replace qcode = 2 if query_name == "translational"
-	replace query_name = "Translational Science" if query_name == "translational"
-replace qcode = 3 if query_name == "clinical"
-	replace query_name = "Clinical Science" if query_name == "clinical"
-
-
-forval dec = 1980(10)2010 {
+foreach QA in "" "_notQA" {
 	
-	graph pie pub_count if decade == `dec' & nih == 0, ///
-		over(query_name) sort(qcode) ///
+	if "`QA'" == "" local journals = "Top 13 Journals"
+	if "`QA'" == "_notQA" local journals = "All Journals"
+
+	import delimited "PubMed_Search_Results_ba-tr-cl`QA'_from1980.csv", clear varn(1)
+
+	split query_name, p("_")
+	drop query_name
+	ren query_name1 query_name
+		replace query_name = "clinical" ///
+			if inlist(query_name, "clinical1", "clinical2") // not needed anymore
+	ren query_name2 fund
+		gen nih = fund == "NIH"
+		drop fund
+
+	gen decade = int(year/10)*10
+
+	*--------- BY DECADE AND FUNDING ---------*
+	collapse (sum) pub_count, by(query_name nih decade)
+
+	forval f = 0/1 {
+		forval dec = 1980(10)2010 {
+			preserve
+				keep if query_name == "total" & nih == `f' & decade == `dec'
+				local N_`dec'_`f': dis pub_count
+				dis "N `dec's `f's: `N_`dec'_`f''"
+			restore
+		}
+		local N_`f' = `N_1980_`f'' + `N_1990_`f'' + `N_2000_`f'' + `N_2010_`f''
+	}
+
+	bys decade nih: egen counted = sum(pub_count) if query_name != "total"
+
+	forval f = 0/1 {
+		forval dec = 1980(10)2010 {
+			preserve
+				keep if nih == `f' & decade == `dec'
+				local n_`dec'_`f': dis counted
+				dis "Shown `dec's `f's: `n_`dec'_`f''"
+			restore
+		}
+		local n_`f' = `n_1980_`f'' + `n_1990_`f'' + `n_2000_`f'' + `n_2010_`f''
+	}
+
+	drop if query_name == "total"
+	keep decade nih pub_count query_name
+
+	if "`QA'" == "" {
+		replace pub_count = pub_count/1000
+		local units "Thousands"
+	}
+	if "`QA'" == "_notQA" {
+		replace pub_count = pub_count/1000000
+		local units "Millions"
+	}
+	lab var pub_count "Publications (in `units')"
+
+	reshape wide pub_count, i(decade nih) j(query_name) string
+	tostring decade, replace
+	replace decade = decade + "s"
+
+	forval nih01 = 0/1 {
+
+		if `nih01' == 0 local fund "Not Funded by NIH"
+		if `nih01' == 1 local fund "Funded by NIH"
+
+		#delimit ;
+		graph bar (asis) pub_countb pub_countt pub_countc if nih == `nih01',
+			over(decade) stack
+			legend(order(1 "Basic" 2 "Translational" 3 "Clinical" ) r(1))
+			title("Non-Trial Journal Articles `fund'")
+			subtitle("(`journals')" "Shown: `n_`nih01'' of `N_`nih01'' Publications")
+			yti("Number of Publications" "(in `units')")
+			bar(1, col(midgreen)) bar(2, col(blue)) bar(3, col(cranberry));
+		graph save "PubMed/gphs/bars_ba-tr-cl_bydecade`QA'_nih`nih01'.gph", replace;
+		graph export "bars_ba-tr-cl_bydecade`QA'_nih`nih01'.png", replace as(png);
+		#delimit cr
+	}
+
+	grc1leg "PubMed/gphs/bars_ba-tr-cl_bydecade`QA'_nih1.gph" ///
+			"PubMed/gphs/bars_ba-tr-cl_bydecade`QA'_nih0.gph", r(2)
+	graph export "bars_ba-tr-cl_bydecade`QA'_combined.png", replace as(png)
+
+	*--------- BY FUNDING ---------*
+	import delimited "PubMed_Search_Results_ba-tr-cl`QA'_from1980.csv", clear varn(1)
+
+	split query_name, p("_")
+	drop query_name
+	ren query_name1 query_name
+		replace query_name = "clinical" ///
+			if inlist(query_name, "clinical1", "clinical2") // not needed anymore
+	ren query_name2 fund
+		gen nih = fund == "NIH"
+		drop fund
+
+	collapse (sum) pub_count, by(query_name nih)
+
+	forval f = 0/1 {
+		preserve
+			keep if query_name == "total" & nih == `f'
+			local N_`f': dis pub_count
+			dis "N `f's: `N_`f''"
+		restore
+	}
+
+	bys nih: egen counted = sum(pub_count) if query_name != "total"
+
+	/* When including an "Other" category
+	bys nih: ereplace counted = max(counted)
+
+	replace pub_count = pub_count-counted if query_name == "total"
+	replace query_name = "other" if query_name == "total"
+	*/
+
+	forval f = 0/1 {
+		preserve
+			keep if nih == `f' & query_name != "total"
+			local n_`f': dis counted
+			dis "Shown `f's: `n_`f''"
+		restore
+	}
+
+	drop if query_name == "total"
+
+	gen qcode = 1 if query_name == "basic"
+		replace query_name = "Basic Science" if query_name == "basic"
+	replace qcode = 2 if query_name == "translational"
+		replace query_name = "Translational Science" if query_name == "translational"
+	replace qcode = 3 if query_name == "clinical"
+		replace query_name = "Clinical Science" if query_name == "clinical"
+
+	graph pie pub_count if nih == 0, over(query_name) sort(qcode) ///
 		pl(1 percent, c(white) format(%9.3g) size(medium)) ///
 		pl(2 percent, c(white) format(%9.3g) size(medium)) ///
 		pl(3 percent, c(white) format(%9.3g) size(medium)) ///
-		title("Non-NIH-Funded Publications, `dec's") legend(colfirst r(1)) ///
-		subtitle("All Journals" "(Non-Trial Journal Articles)" ///
-					"Shown: `n_`dec'_0' of `N_`dec'_0' Publications") ///
+		title("Non-NIH-Funded Publications") legend(colfirst r(1)) ///
+		subtitle("Non-Trial Journal Articles" "(`journals')" ///
+					"Shown: `n_0' of `N_0' Publications") ///
 		pie(1, c(midgreen)) pie(2, c(blue)) pie(3, c(cranberry))
-	graph save "PubMed/gphs/pies_ba-tr-cl_nih0_`dec's.gph", replace
-	graph export "pies_ba-tr-cl_nih0_`dec's.png", replace as(png)
+	graph save "PubMed/gphs/pies_ba-tr-cl`QA'_nih0.gph", replace
+	graph export "pies_ba-tr-cl`QA'_nih0.png", replace as(png)
 
-	graph pie pub_count if decade == `dec' & nih == 1, ///
-		over(query_name) sort(qcode) ///
+	graph pie pub_count if nih == 1, over(query_name) sort(qcode) ///
 		pl(1 percent, c(white) format(%9.3g) size(medium)) ///
 		pl(2 percent, c(white) format(%9.3g) size(medium)) ///
 		pl(3 percent, c(white) format(%9.3g) size(medium)) ///
-		title("NIH-Funded Publications, `dec's") legend(colfirst r(1)) ///
-		subtitle("All Journals" "(Non-Trial Journal Articles)" ///
-					"Shown: `n_`dec'_1' of `N_`dec'_1' Publications") ///
+		title("NIH-Funded Publications") legend(colfirst r(1)) ///
+		subtitle("Non-Trial Journal Articles" "(`journals')" ///
+					"Shown: `n_1' of `N_1' Publications") ///
 		pie(1, c(midgreen)) pie(2, c(blue)) pie(3, c(cranberry))
-	graph save "PubMed/gphs/pies_ba-tr-cl_nih1_`dec's.gph", replace
-	graph export "pies_ba-tr-cl_nih1_`dec's.png", replace as(png)
+	graph save "PubMed/gphs/pies_ba-tr-cl`QA'_nih1.gph", replace
+	graph export "pies_ba-tr-cl`QA'_nih1.png", replace as(png)
 
-	grc1leg "PubMed/gphs/pies_ba-tr-cl_nih0_`dec's.gph" ///
-			"PubMed/gphs/pies_ba-tr-cl_nih1_`dec's.gph", r(1)
-	graph export "pies_ba-tr-cl_`dec's_combined.png", replace as(png)
-}
+		grc1leg "PubMed/gphs/pies_ba-tr-cl`QA'_nih0.gph" ///
+				"PubMed/gphs/pies_ba-tr-cl`QA'_nih1.gph", r(1)
+		graph export "pies_ba-tr-cl`QA'_combined.png", replace as(png)
 
-*--------- BY FUNDING ---------*
-import delimited "PubMed_Search_Results_ba-tr-cl_notQA_from1980.csv", clear varn(1)
+	local N = `N_0' + `N_1'
+	local n = `n_0' + `n_1'
+	collapse (sum) pub_count, by(query_name qcode)
 
-split query_name, p("_")
-drop query_name
-ren query_name1 query_name
-	replace query_name = "clinical" ///
-		if inlist(query_name, "clinical1", "clinical2") // not needed anymore
-ren query_name2 fund
-	gen nih = fund == "NIH"
-	drop fund
-
-collapse (sum) pub_count, by(query_name nih)
-
-forval f = 0/1 {
 	preserve
-		keep if query_name == "total" & nih == `f'
-		local N_`f': dis pub_count
-		dis "N `f's: `N_`f''"
+		collapse (sum) pub_count
+		assert pub_count == `n'
 	restore
-}
 
-bys nih: egen counted = sum(pub_count) if query_name != "total"
-
-/* When including an "Other" category
-bys nih: ereplace counted = max(counted)
-
-replace pub_count = pub_count-counted if query_name == "total"
-replace query_name = "other" if query_name == "total"
-*/
-
-forval f = 0/1 {
-	preserve
-		keep if nih == `f'
-		local n_`f': dis counted
-		dis "Shown `f's: `n_`f''"
-	restore
-}
-
-drop if query_name == "total"
-
-gen qcode = 1 if query_name == "basic"
-	replace query_name = "Basic Science" if query_name == "basic"
-replace qcode = 2 if query_name == "translational"
-	replace query_name = "Translational Science" if query_name == "translational"
-replace qcode = 3 if query_name == "clinical"
-	replace query_name = "Clinical Science" if query_name == "clinical"
-
-graph pie pub_count if nih == 0, over(query_name) sort(qcode) ///
-	pl(1 percent, c(white) format(%9.3g) size(medium)) ///
-	pl(2 percent, c(white) format(%9.3g) size(medium)) ///
-	pl(3 percent, c(white) format(%9.3g) size(medium)) ///
-	title("Non-NIH-Funded Publications") legend(colfirst r(1)) ///
-	subtitle("All Journals" "(Non-Trial Journal Articles)" ///
-				"Shown: `n_0' of `N_0' Publications") ///
-	pie(1, c(midgreen)) pie(2, c(blue)) pie(3, c(cranberry))
-graph save "PubMed/gphs/pies_ba-tr-cl_nih0.gph", replace
-graph export "pies_ba-tr-cl_nih0.png", replace as(png)
-
-graph pie pub_count if nih == 1, over(query_name) sort(qcode) ///
-	pl(1 percent, c(white) format(%9.3g) size(medium)) ///
-	pl(2 percent, c(white) format(%9.3g) size(medium)) ///
-	pl(3 percent, c(white) format(%9.3g) size(medium)) ///
-	title("NIH-Funded Publications") legend(colfirst r(1)) ///
-	subtitle("All Journals" "(Non-Trial Journal Articles)" ///
-				"Shown: `n_1' of `N_1' Publications") ///
-	pie(1, c(midgreen)) pie(2, c(blue)) pie(3, c(cranberry))
-graph save "PubMed/gphs/pies_ba-tr-cl_nih1.gph", replace
-graph export "pies_ba-tr-cl_nih1.png", replace as(png)
-
-	grc1leg "PubMed/gphs/pies_ba-tr-cl_nih0.gph" ///
-			"PubMed/gphs/pies_ba-tr-cl_nih1.gph", r(1)
-	graph export "pies_ba-tr-cl_combined.png", replace as(png)
-
-local N = `N_0' + `N_1'
-local n = `n_0' + `n_1'
-collapse (sum) pub_count, by(query_name qcode)
-
-preserve
-	collapse (sum) pub_count
-	assert pub_count == `n'
-restore
-
-graph pie pub_count , over(query_name) sort(qcode) ///
-	pl(1 percent, c(white) format(%9.3g)) ///
-	pl(2 percent, c(white) format(%9.3g)) ///
-	pl(3 percent, c(white) format(%9.3g)) ///
-	title("Total Publications") legend(colfirst r(1)) ///
-	subtitle("All Journals" "(Non-Trial Journal Articles)" ///
-				"Shown: `n' of `N' Publications") ///
-	pie(1, c(midgreen)) pie(2, c(blue)) pie(3, c(cranberry))
-graph save "PubMed/gphs/pies_ba-tr-cl_all.gph", replace
-graph export "pies_ba-tr-cl_all.png", replace as(png)
-
+	graph pie pub_count , over(query_name) sort(qcode) ///
+		pl(1 percent, c(white) format(%9.3g)) ///
+		pl(2 percent, c(white) format(%9.3g)) ///
+		pl(3 percent, c(white) format(%9.3g)) ///
+		title("Total Publications") legend(colfirst r(1)) ///
+		subtitle("Non-Trial Journal Articles" "(`journals')" ///
+					"Shown: `n' of `N' Publications") ///
+		pie(1, c(midgreen)) pie(2, c(blue)) pie(3, c(cranberry))
+	graph save "PubMed/gphs/pies_ba-tr-cl`QA'_all.gph", replace
+	graph export "pies_ba-tr-cl`QA'_all.png", replace as(png)
+} // end QA loop
 *-----------------------------
 } // end `ba_tr_cl'
 *-----------------------------
