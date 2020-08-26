@@ -1,0 +1,7 @@
+Query_Name	Query
+TotalQA_NIH	AND ("N Engl J Med"[Journal] OR "Lancet"[Journal] OR "JAMA"[Journal] OR "J Am Med Assoc"[Journal] OR "Nature"[Journal] OR "Science"[Journal] OR "Cell"[Journal] OR "BMJ"[Journal] OR "Br Med J"[Journal] OR "Br Med J (Clin Res Ed)"[Journal]) AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+TotalQA_notNIH	AND ("N Engl J Med"[Journal] OR "Lancet"[Journal] OR "JAMA"[Journal] OR "J Am Med Assoc"[Journal] OR "Nature"[Journal] OR "Science"[Journal] OR "Cell"[Journal] OR "BMJ"[Journal] OR "Br Med J"[Journal] OR "Br Med J (Clin Res Ed)"[Journal]) NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+TotalQA_	AND ("N Engl J Med"[Journal] OR "Lancet"[Journal] OR "JAMA"[Journal] OR "J Am Med Assoc"[Journal] OR "Nature"[Journal] OR "Science"[Journal] OR "Cell"[Journal] OR "BMJ"[Journal] OR "Br Med J"[Journal] OR "Br Med J (Clin Res Ed)"[Journal])
+Total_NIH	AND (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Total_notNIH	NOT (NIH[gr] OR "research support, n i h, extramural"[Publication Type] OR "research support, n i h, intramural"[Publication Type])
+Total_	 
