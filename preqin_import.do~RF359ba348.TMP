@@ -110,87 +110,66 @@ if `save_msa_dta' == 1 {
 *=========================================================================
 use dealid dealyear dealsizeusdmn CPIAUCSL2020 CPIAUCSL ///
 	industryclassification primaryindustry ///
-	portfoliocompanycountry portfoliocompanystate portfoliocompanycity ///
+	investorcountry investorstate investorcity ///
 	using "preqin_deals_2000_2019.dta", clear
 keep if industryclassification == "Healthcare"
 
 replace primaryindustry = "Biotechnology" if primaryindustry == "Biopolymers"
 replace primaryindustry = "Healthcare" if primaryindustry == "Healthcare Specialists"
 
-keep if strpos(portfoliocompanycountry, "US") > 0
+keep if strpos(`varname'country, "US") > 0
 
 include "$repo/preqin_clean_msas.do"
 
-/*
-egen n_cities = noccur(portfoliocompanycity), string(",")
-			replace n_cities = n_cities + 1 if portfoliocompanycity != ""
+egen n_cities = noccur(investorcity), string(",")
+			replace n_cities = n_cities + 1 if investorcity != ""
 			replace dealsizeusdmn = dealsizeusdmn/n_cities
-
 			
 foreach city of local foreign_cities {
-	replace portfoliocompanycity = subinstr(portfoliocompanycity, ", `city'", "", .) ///
-		if portfoliocompanycountry != "US"
-	replace portfoliocompanycity = subinstr(portfoliocompanycity, "`city', ", "", .) ///
-		if portfoliocompanycountry != "US"
+	replace investorcity = subinstr(investorcity, ", `city'", "", .) if investorcountry != "US"
+	replace investorcity = subinstr(investorcity, "`city', ", "", .) if investorcountry != "US"
 }
 foreach state of local foreign_states {
-	replace portfoliocompanystate = subinstr(portfoliocompanystate, ", `state'", "", .) ///
-		if portfoliocompanycountry != "US"
-	replace portfoliocompanystate = subinstr(portfoliocompanystate, "`state', ", "", .) ///
-		if portfoliocompanycountry != "US"
+	replace investorstate = subinstr(investorstate, ", `city'", "", .) if investorcountry != "US"
+	replace investorstate = subinstr(investorstate, "`city', ", "", .) if investorcountry != "US"
 }
-*/
-ren portfoliocompanycity city
-*reshape long city, i(dealid dealsizeusdmn portfoliocompanystate) j(cityno)
-	*drop if city == ""
-	replace city = "Ann Arbor" if city == "Ann Arbour"
-	replace city = "Palo Alto" if city == "Menlo Park"
-	replace city = "San Diego" if city == "La Jolla"
-	replace city = "San Mateo" if city == "Portola Valley"
-	replace city = "Philadelphia" if city == "Conshohocken"
-ren portfoliocompanystate state_abbr
-	replace city = "Boston" if city == "Lexington" & state == "MA"
+split investorcity, p(", ") gen(city)
+	drop investorcity
+reshape long city, i(dealid dealsizeusdmn investorstate) j(cityno)
+	drop if city == ""
+split investorstate, p(", ") gen(state_abbr)
 
-/*
-forval ii = 1/9 {
-	ren state_abbr`ii' state_abbr
-	merge m:1 city state_abbr using "../PubMed/MSA_city_state_clean.dta", ///
-			keep(1 3) keepus(cbsacode) nogen
-		destring cbsacode, replace
-		ren cbsacode cbsacode`ii'
-		replace msa = cbsacode`ii' if cityno == `ii'
-	ren state_abbr state_abbr`ii'
-}
-*/
-/*
-gen state_abbr = ""
-forval ii = 1/9 {
-	replace state_abbr = state_abbr`ii' if cityno == `ii' & msa != .
-}
-
-bys city: ereplace state_abbr = mode(state_abbr)
-	replace state_abbr = "" if !inlist(state_abbr, state_abbr1, state_abbr2, ///
-			state_abbr3, state_abbr4, state_abbr5, state_abbr6, ///
-			state_abbr7, state_abbr8, state_abbr9)
-*/
-	merge m:1 city state_abbr using "../PubMed/MSA_city_state_clean.dta", ///
-			keep(1 3) keepus(cbsacode) nogen
-	destring cbsacode, replace
-	*replace msa = cbsacode if msa == .
-
-
-bys cbsacode: egen mode_city = mode(city), minmode
-	replace mode_city = "Boston" if mode_city == "Cambridge" & state == "MA"
-	replace mode_city = "Los Angeles" if mode_city == "Irvine" & state == "CA"
-	replace mode_city = "San Jose" if mode_city == "Palo Alto" & state == "CA"
-bys cbsacode: egen mode_state = mode(state_abbr), minmode
-replace mode_city = "" if cbsacode == .
-replace mode_state = "" if cbsacode == .
-
-gen dealsize_na = dealsizeusdmn == .
-tab dealsize_na
-
-replace dealsizeusdmn = 0 if dealsizeusdmn == .
+br state* city*
+pause
+	
+	
+			* --- By MSA City Groupings ---*
+			gen `varname'msa = "Boston" if strpos(`state', "MA") > 0 ///
+				& inlist(`varname'city, "Cambridge", "Waltham", "Boston")
+			replace `varname'msa = "Boston" if strpos(`state', "MA") > 0 ///
+				& strpos(`state', "KY") == 0 & `varname'city == "Lexington"
+			replace `varname'msa = "Bay Area" if strpos(`state', "CA") > 0 ///
+				& (inlist(`varname'city, "San Francisco", "Menlo Park", "Palo Alto", ///
+					"San Mateo", "San Jose", "Santa Clara", "Mountain View") ///
+				| inlist(`varname'city, "Redwood City", "South San Francisco", ///
+					"Berkeley", "Emeryville", "Sunnyvale", "Fremont"))
+			replace `varname'msa = "Los Angeles" if strpos(`state', "CA") > 0 ///
+				& inlist(`varname'city, "Irvine", "Santa Monica", "Orange", "Pasadena")
+			replace `varname'msa = "New York" if strpos(`state', "NJ") > 0 ///
+				& inlist(`varname'city, "New Brunswick")
+			replace `varname'msa = "San Diego" if strpos(`state', "CA") > 0 ///
+				& inlist(`varname'city, "La Jolla")
+			replace `varname'msa = "Houston" if strpos(`state', "TX") > 0 ///
+				& inlist(`varname'city, "The Woodlands")
+			replace `varname'msa = "Washington, DC" if strpos(`state', "DC") > 0 ///
+				& inlist(`varname'city, "Washington")
+			replace `varname'msa = "Washington, DC" if strpos(`state', "MD") > 0 ///
+				& inlist(`varname'city, "Bethesda")
+			replace `varname'msa = "Washington, DC" if strpos(`state', "VA") > 0 ///
+				& inlist(`varname'city, "Alexandria", "Arlington", "Reston")
+			replace `varname'msa = "Lexington, KY" if strpos(`state', "KY") > 0 ///
+				& `varname'city == "Lexington"
+			replace `varname'msa = `varname'city if `varname'msa == ""
 
 gen dealsizeusdmn_raw = dealsizeusdmn
 	drop dealsizeusdmn
@@ -198,26 +177,18 @@ gen dealsizeusdmn_2020 = dealsizeusdmn_raw*CPIAUCSL2020/CPIAUCSL
 
 			
 foreach dollars in "raw" "2020" {
-	bys dealyear industryclass cbsacode: egen deals_`dollars'USDmnHealthcare = total(dealsizeusdmn_`dollars')
+	bys dealyear industryclass: egen deals_`dollars'USDmnHealthcare = total(dealsizeusdmn_`dollars')
 	foreach ind in "Biotechnology" "Pharmaceuticals" {
-		bys dealyear primaryindustry cbsacode: ///
+		bys dealyear primaryindustry: ///
 			egen deals_`dollars'USDmn`ind' = total(dealsizeusdmn_`dollars') ///
 			if primaryindustry == "`ind'"
-		bys dealyear cbsacode: ereplace deals_`dollars'USDmn`ind' = max(deals_`dollars'USDmn`ind')
-		replace deals_`dollars'USDmn`ind' = 0 if deals_`dollars'USDmn`ind' == .
 	}
 }
+e
 
-sort dealyear cbsacode primaryindustry
+keep if inlist
+collapse (last) deals_*USDmn*, by(dealyear)
 
-collapse (last) deals_*USDmn* city = mode_city state = mode_state, by(cbsacode dealyear)
-
-reshape long deals_rawUSDmn deals_2020USDmn, i(cbsacode city state dealyear) j(class) string
-sort dealyear city state
-order dealyear cbsacode city state
-save "Data/deals_pfcomp_byMSA.dta", replace
-outsheet using "Data/deals_pfcomp_byMSA.csv", comma replace
-sdf
 }
 
 *=========================================================================
@@ -1124,7 +1095,7 @@ graph export "Output/`price'/nih_grant_pies_combined.png", replace as(png)
 if `plots_byloc' == 1 {
 *=========================================================================
 
-foreach firm in /*"Inv"*/ "Pf" {
+foreach firm in "Inv" "Pf" {
 	
 	if "`firm'" == "Inv" {
 		local varname "investor"
