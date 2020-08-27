@@ -30,7 +30,9 @@ local pies_bydisease_sub 0
 local nih_vs_priv 0
 local drugs_and_devices 0
 local ba_tr_cl 0
-local ba_tr_cl_bydisease 1
+local ba_tr_cl_bydisease 0
+local basic_msas 0
+local alz 1
 
 
 global repo "C:/Users/lmostrom/Documents/GitHub/healthcare_trends/"
@@ -2255,7 +2257,7 @@ foreach priv in /*"notNIH"*/ "Corporation" { // misnomer - mostly Univ's & Hospi
 	if "`priv'" == "Corporation" local _vsCorp "_vsCorp"
 foreach QA in "" "_notQA" {
 
-	if "`QA'" == "" local journals "Top 13 Journals"
+	if "`QA'" == "" local journals "Top 8 Journals"
 	if "`QA'" == "_notQA" local journals "All Journals"
 
 	if "`QA'" == "_notQA" & "`priv'" == "notNIH" {
@@ -2284,20 +2286,23 @@ foreach QA in "" "_notQA" {
 		collapse (count) pub_count = pmid, by(query_name pub_type nih year)
 	}
 	if "`priv'" == "Corporation" {
-			use `nih_pmids', clear
-			append using `corp_pmids'
-			tempfile nih_and_corp
-			save `nih_and_corp', replace
-
-		use `dd_pmids', clear
-			merge m:1 pmid year using `nih_and_corp', keep(3) nogen
-		drop query_name
+			
+		use "PubMed/Master_dta/pmids_drugs_devices.dta", clear
+			if "`QA'" == "" {
+			    merge m:1 pmid using "PubMed/Master_dta/pmids_QA_wos_funding.dta", keep(3) nogen
+			}
+			else merge m:1 pmid using "PubMed/Master_dta/pmids`QA'_wos_funding.dta", keep(3) nogen
+		
 			if "`QA'" == "" {
 				merge m:1 pmid year using `qa_pmids', keep(3) nogen
 				drop query_name
 			}
 		split ddcat, p("_") gen(query_name)
-		gen nih = substr(query_name3,1,3) == "NIH"
+		*gen nih = substr(query_name3,1,3) == "NIH"
+		keep if !no_funding_info
+		gen priv = (compustat | corp) & !nih & !gov & !foundation
+		keep if nih | priv
+		drop priv gov foundation educ hosp no_funding_info
 
 		drop ddcat query_name3
 		ren query_name1 query_name
@@ -2360,12 +2365,17 @@ foreach QA in "" "_notQA" {
 	replace qcode = 8 if query_name == "bio"
 		replace query_name = "Biological Phenomena Only" if query_name == "bio"
 
+cap mkdir "WOS_Funding_Plots"
+cd "WOS_Funding_Plots"
+		
 	forval nih01 = 0/1 {
 
 		if `nih01' == 1 local fund "Funded by NIH"
-		if "`priv'" == "Corporation" & `nih01' == 0 local fund "Privately Funded"
+		if "`priv'" == "Corporation" & `nih01' == 0 local fund "Corporate-Funded"
 		if "`priv'" == "notNIH" & `nih01' == 0 local fund "Not Funded by NIH"
 
+
+		
 		graph pie pub_count if pub_type == "CT" & nih == `nih01', ///
 			over(query_name) sort(qcode) ///
 			pl(1 percent, c(white) format(%9.3g) size(medsmall)) ///
@@ -2375,8 +2385,9 @@ foreach QA in "" "_notQA" {
 			title("Clinical Trials (II & III)" "`fund'") legend(colfirst) ///
 			subtitle("`journals'" "Shown: `n_CT`nih01'' of `N_CT`nih01'' Trials") ///
 			pie(1, c(cranberry)) pie(2, c(magenta)) pie(3, c(purple)) ///
-			pie(4, c(dkgreen)) pie(5, c(dkorange))
-		graph save "PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_CTs_nih`nih01'.gph", replace
+			pie(4, c(dkgreen)) pie(5, c(dkorange)) ///
+			note("Funding information from Web of Science")
+		graph save "../PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_CTs_nih`nih01'.gph", replace
 		graph export "pies_drugs_devices`_vsCorp'`QA'_CTs_nih`nih01'.png", replace as(png)
 
 		graph pie pub_count if pub_type == "Pub" & nih == `nih01', ///
@@ -2392,17 +2403,18 @@ foreach QA in "" "_notQA" {
 			subtitle("`journals'" "Shown: `n_Pub`nih01'' of `N_Pub`nih01'' Papers") ///
 			pie(1, c(cranberry)) pie(2, c(magenta)) pie(3, c(purple)) ///
 			pie(4, c(dkgreen)) pie(5, c(dkorange)) ///
-			pie(6, c(sienna)) pie(7, c(midblue)) pie(8, c(midgreen))
-		graph save "PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_Pubs_nih`nih01'.gph", replace
+			pie(6, c(sienna)) pie(7, c(midblue)) pie(8, c(midgreen)) ///
+			note("Funding information from Web of Science")
+		graph save "../PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_Pubs_nih`nih01'.gph", replace
 		graph export "pies_drugs_devices`_vsCorp'`QA'_Pubs_nih`nih01'.png", replace as(png)
 	}
 
-		grc1leg "PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_CTs_nih1.gph" ///
-				"PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_CTs_nih0.gph", r(1)
+		grc1leg "../PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_CTs_nih1.gph" ///
+				"../PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_CTs_nih0.gph", r(1)
 		graph export "pies_drugs_devices`_vsCorp'`QA'_CTs_combined.png", replace as(png)
 
-		grc1leg "PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_Pubs_nih1.gph" ///
-				"PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_Pubs_nih0.gph", r(1)
+		grc1leg "../PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_Pubs_nih1.gph" ///
+				"../PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_Pubs_nih0.gph", r(1)
 		graph export "pies_drugs_devices`_vsCorp'`QA'_Pubs_combined.png", replace as(png)
 
 
@@ -2420,7 +2432,7 @@ foreach QA in "" "_notQA" {
 	forval nih01 = 0/1 {
 
 		if `nih01' == 1 local fund "Funded by NIH"
-		if "`priv'" == "Corporation" & `nih01' == 0 local fund "Privately Funded"
+		if "`priv'" == "Corporation" & `nih01' == 0 local fund "Corporate-Funded"
 		if "`priv'" == "notNIH" & `nih01' == 0 local fund "Not Funded by NIH"
 
 		graph pie pub_count if nih == `nih01', over(query_name) sort(qcode) ///
@@ -2435,15 +2447,16 @@ foreach QA in "" "_notQA" {
 			subtitle("`journals'" "Shown: `n`nih01'' of `N`nih01'' Publications") ///
 			pie(1, c(cranberry)) pie(2, c(magenta)) pie(3, c(purple)) ///
 			pie(4, c(dkgreen)) pie(5, c(dkorange)) ///
-			pie(6, c(sienna)) pie(7, c(midblue)) pie(8, c(midgreen))
-		graph save "PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_All_nih`nih01'.gph", replace
+			pie(6, c(sienna)) pie(7, c(midblue)) pie(8, c(midgreen)) ///
+			note("Funding information from Web of Science")
+		graph save "../PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_All_nih`nih01'.gph", replace
 		graph export "pies_drugs_devices`_vsCorp'`QA'_All_nih`nih01'.png", replace as(png)
 	}
 
-		grc1leg "PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_All_nih1.gph" ///
-				"PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_All_nih0.gph", r(1)
+		grc1leg "../PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_All_nih1.gph" ///
+				"../PubMed/gphs/pies_drugs_devices`_vsCorp'`QA'_All_nih0.gph", r(1)
 		graph export "pies_drugs_devices`_vsCorp'`QA'_All_combined.png", replace as(png)
-
+cd ../
 	*--------- Not Separated NIH/Not NIH -----------------*
 	if "`QA'" == "_notQA" & "`priv'" == "notNIH" {
 		import delimited "PubMed_Search_Results_drugs_devices_notQA_from1980.csv", clear varn(1)
@@ -2456,8 +2469,11 @@ foreach QA in "" "_notQA" {
 		ren query_name2 pub_type
 	}
 	if "`QA'" == "" & "`priv'" == "notNIH" {
-		use `dd_pmids', clear
-			merge m:1 pmid year using `qa_pmids', keep(3) nogen
+		use "PubMed/Master_dta/pmids_drugs_devices.dta", clear
+			if "`QA'" == "" {
+			    merge m:1 pmid using "PubMed/Master_dta/pmids_QA_wos_funding.dta", keep(3) nogen
+			}
+			else merge m:1 pmid using "PubMed/Master_dta/pmids`QA'_wos_funding.dta", keep(3) nogen
 
 
 		drop query_name
@@ -2471,20 +2487,22 @@ foreach QA in "" "_notQA" {
 		collapse (count) pub_count = pmid, by(query_name pub_type nih year)
 	}
 	if "`priv'" == "Corporation" {
-		use `nih_pmids', clear
-			append using `corp_pmids'
-			tempfile nih_and_corp
-			save `nih_and_corp', replace
-
-		use `dd_pmids', clear
-			merge m:1 pmid year using `nih_and_corp', keep(3) nogen
-		drop query_name
+		use "PubMed/Master_dta/pmids_drugs_devices.dta", clear
+			if "`QA'" == "" {
+			    merge m:1 pmid using "PubMed/Master_dta/pmids_QA_wos_funding.dta", keep(3) nogen
+			}
+			else merge m:1 pmid using "PubMed/Master_dta/pmids`QA'_wos_funding.dta", keep(3) nogen
+			
 			if "`QA'" == "" {
 				merge m:1 pmid year using `qa_pmids', keep(3) nogen
 				drop query_name
 			}
 		split ddcat, p("_") gen(query_name)
-		gen nih = substr(query_name3,1,3) == "NIH"
+		*gen nih = substr(query_name3,1,3) == "NIH"
+		keep if !no_funding_info
+		gen priv = (compustat | corp) & !nih & !gov & !foundation
+		keep if nih | priv
+		drop priv gov educ hosp foundation no_funding_info
 
 		drop ddcat query_name3
 		ren query_name1 query_name
@@ -2542,6 +2560,8 @@ foreach QA in "" "_notQA" {
 	replace qcode = 8 if query_name == "bio"
 		replace query_name = "Biological Phenomena Only" if query_name == "bio"
 
+cd "WOS_Funding_Plots"
+		
 	graph pie pub_count if pub_type == "CT", ///
 		over(query_name) sort(qcode) ///
 		pl(1 percent, c(white) format(%9.3g)) ///
@@ -2593,7 +2613,7 @@ foreach QA in "" "_notQA" {
 		pie(4, c(dkgreen)) pie(5, c(dkorange)) ///
 		pie(6, c(sienna)) pie(7, c(midblue)) pie(8, c(midgreen))
 	graph export "pies_drugs_devices`_vsCorp'`QA'_All.png", replace as(png)
-
+cd ../
 } // end QA loop
 } // end Not NIH/Corporation loop
 
@@ -2606,12 +2626,12 @@ if `ba_tr_cl' == 1 {
 *-----------------------------
 cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
 
-foreach priv in /*"notNIH"*/ "Corporation" { // misnomer - mostly Univ's & Hospitals
+foreach priv in /*"notNIH"*/ "Corporation" {
 	if "`priv'" == "Corporation" local _vsCorp "_vsCorp"
-foreach _wCTs in "" "_wCTs" {
+foreach _wCTs in /*""*/ "_wCTs" {
 foreach QA in "" "_notQA" {
 	
-	if "`QA'" == "" local journals = "Top 13 Journals"
+	if "`QA'" == "" local journals = "Top 8 Journals"
 	if "`QA'" == "_notQA" local journals = "All Journals"
 
 	if "`priv'" == "notNIH" {
@@ -2637,24 +2657,103 @@ foreach QA in "" "_notQA" {
 	collapse (sum) pub_count, by(query_name nih decade)
 	}
 	if "`priv'" == "Corporation" {
-			use `nih_pmids', clear
-			append using `corp_pmids'
-			tempfile nih_and_corp
-			save `nih_and_corp', replace
-
 		use "PubMed/Master_dta/pmids_bas_trans_clin`QA'.dta", clear
-			merge m:1 pmid year using `nih_and_corp', keep(3) nogen
-		drop query_name
-	
+		ren nih pm_nih
+			if "`QA'" == "" {
+			    merge m:1 pmid using "PubMed/Master_dta/pmids_QA_wos_funding.dta", keep(3) nogen
+			}
+			else merge m:1 pmid using "PubMed/Master_dta/pmids`QA'_wos_funding.dta", keep(3) nogen
+		
+			replace nih = 1 if nih == 0 & pm_nih == 1
+				replace no_funding_info = 0 if pm_nih == 1
+			replace gov = 0 if gov == 1 & nih == 1
+			replace foundation = 0 if foundation == 1 & (nih | gov)
+			gen priv = (compustat | corp) & !nih & !gov & !foundation & !no_funding_info
+			replace educ = 0 if educ == 1 & (nih | gov | foundation | priv)
+			replace hosp = 0 if hosp == 1 & (nih | gov | foundation | priv | educ)
+			egen check = rowtotal(nih gov foundation priv educ hosp no_funding_info)
+				assert check <= 1
+		
 	ren btc query_name
+	
 
 		if "`_wCTs'" == "_wCTs" {
 			replace query_name = "total" if query_name == "totalCTs"
 			replace query_name = "CT" if query_name == "trial"
-		}
+			
+			cd "WOS_Funding_Plots"
+			
+		foreach from2008 in "" "_from2008" {
+			preserve
+				drop if query_name == "total"
+				if "`from2008'" == "_from2008" {
+					drop if year < 2008 // better funding data 
+					local subt "Since 2008"
+				}
+				else local subt ""
+				collapse (sum) pub_countNIH = nih pub_countGov = gov ///
+								pub_countFoundation = foundation pub_countCorp = priv ///
+								pub_countEduc = educ pub_countHosp = hosp ///
+								pub_countNoInfo = no_funding_info ///
+						 (count) pub_count = pmid, by(query_name)
+				gen sort_order = 1 if query_name == "basic"
+					replace sort_order = 2 if query_name == "translational"
+					replace sort_order = 3 if query_name == "clinical"
+					replace sort_order = 4 if query_name == "CT"
+				replace query_name = "trial" if query_name == "CT"
+					replace query_name = proper(query_name)
+				gen pub_countO = pub_count - pub_countNIH - pub_countGov ///
+						- pub_countF - pub_countC - pub_countE - pub_countH - pub_countNo
+				foreach var of varlist pub_count* {
+				    replace `var' = `var'/1000
+				}
+				#delimit ;
+				graph bar (asis) pub_countNIH pub_countG pub_countF
+									pub_countC pub_countE pub_countH
+									pub_countO pub_countNo,
+					over(query_name, sort(sort_order)) stack
+					legend(order(1 "NIH" 2 "Other Gov. Agency" 3 "Foundation"
+								 4 "Corporation" 5 "Educational Institution"
+								 6 "Hospital" 7 "Other Entity" 8 "No Funding Information")
+							r(3) symx(small) symy(small))
+					title("Publications by Research Stage and Funder")
+					subtitle("(`journals')" "`subt'")
+					yti("Number of Publications" "(in Thousands)")
+					bar(1, col(blue)) bar(2, col(midgreen)) bar(3, col(purple))
+					bar(4, col(red)) bar(5, col(dkorange)) bar(6, col(emerald))
+					bar(7, col(sand)) bar(8, col(gs7));
+				graph export "bars_ba-tr-cl_byfunder`QA'`from2008'.png", replace as(png);
+				
+				graph bar (asis) pub_countNIH pub_countG pub_countF
+									pub_countC pub_countE pub_countH
+									/*pub_countO pub_countNo*/,
+					over(query_name, sort(sort_order)) stack
+					legend(order(1 "NIH" 2 "Other Gov. Agency" 3 "Foundation"
+								 4 "Corporation" 5 "Educational Institution"
+								 6 "Hospital" /*7 "Other Entity" 8 "No Funding Information"*/)
+							r(3) symx(small) symy(small))
+					title("Publications by Research Stage and Funder")
+					subtitle("(`journals')" "`subt'")
+					yti("Number of Publications" "(in Thousands)")
+					bar(1, col(blue)) bar(2, col(midgreen)) bar(3, col(purple))
+					bar(4, col(red)) bar(5, col(dkorange)) bar(6, col(emerald))
+					bar(7, col(sand)) bar(8, col(gs7))
+					note("Includes only publications with available funding information");
+				graph export "bars_ba-tr-cl_byfunder`QA'_wInfoOnly`from2008'.png", replace as(png);
+				#delimit cr
+			restore
+		} // from 2008
+		
+		cd ../
+		} // if including CTs
 		if "`_wCTs'" == "" {
 			drop if inlist(query_name, "trial", "totalCTs")
 		}
+		
+		keep if !no_funding_info
+		keep if nih | priv
+		drop priv gov foundation educ hosp no_funding_info
+
 	gen decade = int(year/10)*10
 	collapse (count) pub_count = pmid, by(query_name nih decade)
 	}
@@ -2685,19 +2784,12 @@ foreach QA in "" "_notQA" {
 	drop if query_name == "total"
 	keep decade nih pub_count query_name
 
-	if "`QA'" == "" {
+	
 		replace pub_count = pub_count/1000
 		local units "Thousands"
-	}
-	if "`QA'" == "_notQA" {
-		replace pub_count = pub_count/1000000
-		local units "Millions"
-	}
-	lab var pub_count "Publications (in `units')"
 
-	reshape wide pub_count, i(decade nih) j(query_name) string
-	tostring decade, replace
-	replace decade = decade + "s"
+
+	lab var pub_count "Publications (in `units')"
 
 	if "`_wCTs'" == "_wCTs" {
 		local CTbar "pub_countCT"
@@ -2713,9 +2805,15 @@ foreach QA in "" "_notQA" {
 		local leg_rows "r(1)"
 		local title "Non-Trial Journal Articles"
 	}
+	
+	reshape wide pub_count, i(decade nih) j(query_name) string
+	tostring decade, replace
+	replace decade = decade + "s"
 
 	gen fundname = "NIH" if nih
 	replace fundname = "Private" if !nih
+
+cd "WOS_Funding_Plots"
 
 		#delimit ;
 		graph bar (asis) pub_countb pub_countt pub_countc `CTbar',
@@ -2723,19 +2821,19 @@ foreach QA in "" "_notQA" {
 			legend(order(1 "Basic Science" 2 "Translational Science"
 						 3 "Clinical Science" `legend4')
 					`leg_rows' symx(small) symy(small))
-			title("`title' `fund'")
+			title("`title'")
 			subtitle("(`journals')" "Shown: `n' of `N' Publications")
 			yti("Number of Publications" "(in `units')")
 			bar(1, col(midgreen)) bar(2, col(blue)) bar(3, col(cranberry))
 			`bar4col';
-		graph save "PubMed/gphs/bars_ba-tr-cl`_wCTs'_bydecade`_vsCorp'`QA'_nih`nih01'.gph", replace;
+		graph save "../PubMed/gphs/bars_ba-tr-cl`_wCTs'_bydecade`_vsCorp'`QA'_nih`nih01'.gph", replace;
 		graph export "bars_ba-tr-cl`_wCTs'_bydecade`_vsCorp'`QA'_nih`nih01'.png", replace as(png);
 		#delimit cr
 
-	grc1leg "PubMed/gphs/bars_ba-tr-cl`_wCTs'_bydecade`_vsCorp'`QA'_nih1.gph" ///
-			"PubMed/gphs/bars_ba-tr-cl`_wCTs'_bydecade`_vsCorp'`QA'_nih0.gph", r(2)
+	grc1leg "../PubMed/gphs/bars_ba-tr-cl`_wCTs'_bydecade`_vsCorp'`QA'_nih1.gph" ///
+			"../PubMed/gphs/bars_ba-tr-cl`_wCTs'_bydecade`_vsCorp'`QA'_nih0.gph", r(2)
 	graph export "bars_ba-tr-cl`_wCTs'_bydecade`_vsCorp'`QA'_combined.png", replace as(png)
-
+cd ../
 	*--------- BY FUNDING ---------*
 	if "`priv'" == "notNIH" {
 		import delimited "PubMed_Search_Results_ba-tr-cl`QA'_from1980.csv", clear varn(1)
@@ -2755,10 +2853,13 @@ foreach QA in "" "_notQA" {
 		}
 	collapse (sum) pub_count, by(query_name nih)
 	}
+	
 	if "`priv'" == "Corporation" {
 		use "PubMed/Master_dta/pmids_bas_trans_clin`QA'.dta", clear
-			merge m:1 pmid year using `nih_and_corp', keep(3) nogen
-		drop query_name
+			if "`QA'" == "" {
+			    merge m:1 pmid using "PubMed/Master_dta/pmids_QA_wos_funding.dta", keep(3) nogen
+			}
+			else merge m:1 pmid using "PubMed/Master_dta/pmids`QA'_wos_funding.dta", keep(3) nogen
 	
 		ren btc query_name
 
@@ -2769,6 +2870,12 @@ foreach QA in "" "_notQA" {
 		if "`_wCTs'" == "" {
 			drop if inlist(query_name, "trial", "totalCTs")
 		}
+		
+		keep if !no_funding_info
+		gen priv = (compustat | corp) & !nih & !gov & !foundation
+		keep if nih | priv
+		drop priv gov foundation educ hosp no_funding_info
+		
 	collapse (count) pub_count=pmid, by(query_name nih)
 	}
 
@@ -2821,16 +2928,18 @@ foreach QA in "" "_notQA" {
 		local subtitle "Non-Trial Journal Articles"
 		local legend "legend(r(1) symx(small) symy(small))"
 	}
+	
+cd "WOS_Funding_Plots"
 
 	graph pie pub_count if nih == 0, over(query_name) sort(qcode) ///
 		pl(1 percent, c(white) format(%9.3g) size(medium)) ///
 		pl(2 percent, c(white) format(%9.3g) size(medium)) ///
 		pl(3 percent, c(white) format(%9.3g) size(medium)) `pl4' ///
-		title("Privately Funded Publications") `legend' ///
+		title("Corporate-Funded Publications") `legend' ///
 		subtitle("`subtitle'" "(`journals')" ///
 					"Shown: `n_0' of `N_0' Publications") ///
 		pie(1, c(midgreen)) pie(2, c(blue)) pie(3, c(cranberry)) `pie4'
-	graph save "PubMed/gphs/pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_nih0.gph", replace
+	graph save "../PubMed/gphs/pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_nih0.gph", replace
 	graph export "pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_nih0.png", replace as(png)
 
 	graph pie pub_count if nih == 1, over(query_name) sort(qcode) ///
@@ -2841,11 +2950,11 @@ foreach QA in "" "_notQA" {
 		subtitle("`subtitle'" "(`journals')" ///
 					"Shown: `n_1' of `N_1' Publications") ///
 		pie(1, c(midgreen)) pie(2, c(blue)) pie(3, c(cranberry)) `pie4'
-	graph save "PubMed/gphs/pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_nih1.gph", replace
+	graph save "../PubMed/gphs/pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_nih1.gph", replace
 	graph export "pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_nih1.png", replace as(png)
 
-		grc1leg "PubMed/gphs/pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_nih0.gph" ///
-				"PubMed/gphs/pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_nih1.gph", r(1)
+		grc1leg "../PubMed/gphs/pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_nih0.gph" ///
+				"../PubMed/gphs/pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_nih1.gph", r(1)
 		graph export "pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_combined.png", replace as(png)
 
 	local N = `N_0' + `N_1'
@@ -2868,8 +2977,10 @@ foreach QA in "" "_notQA" {
 		subtitle("`subtitle'" "(`journals')" ///
 					"Shown: `n' of `N' Publications") ///
 		pie(1, c(midgreen)) pie(2, c(blue)) pie(3, c(cranberry)) `pie4'
-	graph save "PubMed/gphs/pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_all.gph", replace
+	graph save "../PubMed/gphs/pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_all.gph", replace
 	graph export "pies_ba-tr-cl`_wCTs'`_vsCorp'`QA'_all.png", replace as(png)
+	
+cd ../
 } // end QA loop
 } // end w/ CTs loop
 } // end loop comparing NIH to privately funded research
@@ -2884,24 +2995,19 @@ cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
 
 *local filelist: dir "PubMed/PMIDs/PieCharts/" files "PMIDs_BTC_*.csv"
 
-use `nih_pmids', clear
-append using `corp_pmids'
-tempfile nih_and_corp
-save `nih_and_corp', replace
-
 foreach priv in /*"notNIH"*/ "Corporation" { // misnomer - mostly Univ's & Hospitals
 	if "`priv'" == "Corporation" local _vsCorp "_vsCorp"
 foreach QA in "" "_notQA" {
 
 	if "`QA'" == "" {
 		local yes_no "!="
-		local journals "Top 13 Journals"
+		local journals "Top 7 Journals"
 	}
 	if "`QA'" == "_notQA" {
 		local yes_no "=="
 		local journals "All Journals"
 	}
-	/*
+	
 	local i = 1
 	foreach file of local filelist {
 	if substr("`file'", 11, 5) `yes_no' "notqa" {
@@ -2935,17 +3041,17 @@ foreach QA in "" "_notQA" {
 		ren query_name1 btc
 
 	save "PubMed/Master_dta/pmids_bas_trans_clin`QA'.dta", replace
-	*/
+/*
 foreach _wCTs in /*""*/ "_wCTs" {
 	use "PubMed/Master_dta/pmids_bas_trans_clin`QA'.dta", clear
-		merge m:1 pmid year using `nih_and_corp', keep(3) nogen
-		drop query_name
+			if "`QA'" == "" {
+			    merge m:1 pmid using "PubMed/Master_dta/pmids_QA_wos_funding.dta", keep(3) nogen
+			}
+			else merge m:1 pmid using "PubMed/Master_dta/pmids`QA'_wos_funding.dta", keep(3) nogen
 
 	if "`_wCTs'" == "_wCTs" {
 		replace btc = "total" if btc == "totalCTs"
 		replace btc = "CT" if btc == "trial"
-		br
-		pause
 	}
 	if "`_wCTs'" == "" drop if inlist(btc, "trial", "totalCTs")
 
@@ -2961,6 +3067,11 @@ foreach _wCTs in /*""*/ "_wCTs" {
 
 	drop if btc == "basic" // very few, should be 0
 
+		keep if !no_funding_info
+		gen priv = (compustat | corp) & !nih & !gov & !foundation
+		keep if nih | priv
+		drop priv gov foundation educ hosp no_funding_info
+		
 	duplicates drop pmid dis_abbr btc, force
 	collapse (count) pub_count = pmid, by(dis_abbr btc nih)
 	if "`QA'" == "" {
@@ -3034,8 +3145,10 @@ foreach _wCTs in /*""*/ "_wCTs" {
 	forval nih01 = 0/1 {
 
 		if `nih01' == 1 local fund "Funded by NIH"
-		if `nih01' == 0 & "`priv'" == "Corporation" local fund "Privately Funded"
+		if `nih01' == 0 & "`priv'" == "Corporation" local fund "Corporate-Funded"
 		if `nih01' == 0 & "`priv'" == "notNIH" local fund "Not Funded by NIH"
+		
+cd "WOS_Funding_Plots"
 
 		#delimit ;
 		graph bar (asis) pub_countt pub_countc pub_counto if  nih == `nih01', stack
@@ -3047,14 +3160,15 @@ foreach _wCTs in /*""*/ "_wCTs" {
 					subtitle("(`journals')")
 					yti("Number of Publications" "(in `units')") aspect(0.32)
 					bar(1, col(blue)) bar(2, col(cranberry)) bar(3, col(gs7));
-		graph save "PubMed/gphs/bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'`QA'_nih`nih01'.gphs", replace;
+		graph save "../PubMed/gphs/bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'`QA'_nih`nih01'.gphs", replace;
 		graph export "bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'`QA'_nih`nih01'.png", replace as(png);
 		#delimit cr
+cd ../
 	}
 
 	grc1leg "PubMed/gphs/bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'`QA'_nih1.gphs" ///
 			"PubMed/gphs/bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'`QA'_nih0.gphs", c(1) xcommon
-	graph export "bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'`QA'_combined.png", replace as(png)
+	graph export "WOS_Funding_Plots/bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'`QA'_combined.png", replace as(png)
 
 	gen fundname = "NIH" if nih
 	replace fundname = "Private" if !nih
@@ -3085,17 +3199,292 @@ foreach _wCTs in /*""*/ "_wCTs" {
 				yti("Number of Publications" "(in `units')") aspect(0.2)
 				bar(1, col(blue)) bar(2, col(cranberry)) `barsCT';
 	graph save "PubMed/gphs/bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'`QA'.gphs", replace;
-	graph export "bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'`QA'.png", replace as(png);
+	graph export "WOS_Funding_Plots/bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'`QA'.png", replace as(png);
 	#delimit cr
 } // end loop over w/CTs and without CTs
+*/
 } // end  QA loop
-
+/*
 foreach _wCTs in "" "_wCTs" {
 	grc1leg "PubMed/gphs/bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'.gphs" ///
 			"PubMed/gphs/bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'_notQA.gphs", c(1)
-	graph export "bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'_QA_vs_All.png", replace as(png)
+	graph export "WOS_Funding_Plots/bars_ba-tr-cl_bydisease`_wCTs'`_vsCorp'_QA_vs_All.png", replace as(png)
 } // end loop over w/CTs and without CTs
+*/
 } // end loop through not NIH and Corporations
 *-----------------------------
 } // end `ba_tr_cl_bydisease'
 *-----------------------------
+
+
+*-----------------------------
+if `basic_msas' == 1 {
+*-----------------------------
+cap cd "C:/Users/lmostrom/Dropbox/Amitabh/"
+foreach QA in "" "_notQA" {
+	use "PubMed/Master_dta/pmids_bas_trans_clin`QA'.dta", clear
+
+	tempfile pmids
+	save `pmids', replace
+
+	if "`QA'" == "" {
+		use "PubMed/clean_auth_affls.dta", clear
+		local journals "Top 7 Journals, Full Sample"
+		local graphnote "note(BMJ, Cell, JAMA, Lancet, Nature, NEJM, Science)"
+	}
+	if "`QA'" == "_notQA" {
+		use "PubMed/clean_auth_affls_master.dta", clear
+		local journals "All Journals, 5% Sample Scaled Up"
+		local graphnote ""
+	}
+	
+	merge 1:m pmid using `pmids', keep(2 3) nogen
+		drop if inlist(btc, "total", "totalCTs")
+
+	gen has_affl = affl != ""
+	gen usa = has_affl & inlist(country, "", "USA")
+
+	gen MSAgroup = "BOS" if cbsacode == 14460
+		replace MSAgroup = "SF & SJ" if inlist(cbsacode, 41860, 41940)
+		replace MSAgroup = "CHI" if cbsacode == 16980
+		replace MSAgroup = "NY" if cbsacode == 35620
+		replace MSAgroup = "DC" if inlist(cbsacode, 47900)
+		replace MSAgroup = "LA" if cbsacode == 31080
+		replace MSAgroup = "SD" if cbsacode == 41740
+		replace MSAgroup = "NHAV" if cbsacode == 35300
+		replace MSAgroup = "SEA" if cbsacode == 42660
+		replace MSAgroup = "DUR/CH" if cbsacode == 20500
+
+		replace MSAgroup = "Other" if cbsacode != . & MSAgroup == ""
+
+	levelsof btc, local(B_T_C)
+	gen decade = 10*int(year/10)
+
+	keep if has_affl
+	collapse (count) pmid, by(MSAgroup decade btc)
+		bys MSAgroup btc: egen sort_tot = total(pmid)
+		if "`QA'" == "_notQA" replace pmid = pmid * 20
+	foreach cat of local B_T_C {
+		if "`cat'" == "basic" {
+			local ti "Basic Science Publications"
+			local cols "bar(1, col(emerald)) bar(2, col(midgreen)) bar(3, col(mint))"
+		}
+		if "`cat'" == "translational" {
+			local ti "Translational Science Publications"
+			local cols "bar(1, col(navy)) bar(2, col(blue)) bar(3, col(eltblue))"
+		}
+		if "`cat'" == "clinical" {
+			local ti "Clinical Science Publications"
+			local cols "bar(1, col(maroon)) bar(2, col(cranberry)) bar(3, col(erose))"
+		}
+		if "`cat'" == "trial" {
+			local ti "Clinical Trials"
+			local cols "bar(1, col(sienna)) bar(2, col(dkorange)) bar(3, col(sand))"
+		}
+		
+		* -- Calculating N to show what % in these top MSAs -- *	
+		preserve
+			keep if btc == "`cat'"
+			collapse (sum) pmid
+			local N: dis pmid
+		restore
+		preserve
+			keep if btc == "`cat'" & !inlist(MSAgroup, "", "Other")
+			collapse (sum) pmid
+			local n: dis pmid
+			local pctN = round(`n'/`N'*100, 1)
+		restore
+			
+		#delimit ;
+		graph bar (asis) pmid if inlist(decade, 1990, 2000, 2010) 
+			& !inlist(MSAgroup, "", "Other") & btc == "`cat'", 
+			over(decade, gap(5)) asyvars `cols'
+			over(MSAgroup, sort(sort_tot) descending) yti("")
+		title("`ti'") subtitle("(`journals')" "Shown: `n' of `N' (`pctN'%) Publications")
+		`graphnote'
+		legend(order(1 "1990s" 2 "2000s" 3 "2010s") r(1));
+		graph save "PubMed/gphs/bars_BTC_`cat'_bymsa_bydecade`QA'.gph", replace;
+		graph export "bars_BTC_`cat'_bymsa_bydecade`QA'.png",
+			replace as(png) wid(1600) hei(700);
+		#delimit cr
+
+	} // disease loop
+	
+	collapse (sum) pmid, by(MSAgroup btc)
+	foreach cat of local B_T_C {
+		if "`cat'" == "basic" {
+			local ti "Basic Science Publications"
+			local col "bar(1, col(midgreen))"
+		}
+		if "`cat'" == "translational" {
+			local ti "Translational Science Publications"
+			local col "bar(1, col(blue))"
+		}
+		if "`cat'" == "clinical" {
+			local ti "Clinical Science Publications"
+			local col "bar(1, col(cranberry))"
+		}
+		if "`cat'" == "trial" {
+			local ti "Clinical Trials"
+			local col "bar(1, col(dkorange))"
+		}
+
+		* -- Calculating N to show what % in these top MSAs -- *	
+		preserve
+			keep if btc == "`cat'"
+			collapse (sum) pmid
+			local N: dis pmid
+		restore
+		preserve
+			keep if btc == "`cat'" & !inlist(MSAgroup, "", "Other")
+			collapse (sum) pmid
+			local n: dis pmid
+			local pctN = round(`n'/`N'*100, 1)
+		restore
+		
+		#delimit ;
+		graph bar (asis) pmid if !inlist(MSAgroup, "", "Other") & btc == "`cat'", 
+			over(MSAgroup, sort(pmid) descending) yti("") `col'
+			title("`ti'") subtitle("(`journals')" "Shown: `n' of `N' (`pctN'%) Publications")
+			`graphnote';
+		graph save "PubMed/gphs/bars_BTC_`cat'_bymsa`QA'.gph", replace;
+		graph export "bars_BTC_`cat'_bymsa`QA'.png", replace as(png) wid(1600) hei(700);
+		#delimit cr
+	}
+
+}
+
+*---------------------------
+} // end plots by discipline by MSA
+*---------------------------
+
+
+
+*-----------------------------
+if `alz' == 1 {
+*-----------------------------
+cap cd "C:/Users/lmostrom/Dropbox/Amitabh/PubMed/"
+foreach notQA in "" "_notQA" {
+	import delimited "PubMed_Search_Results_GBDlev2`notQA'_from1980.csv", clear varn(1)
+	split query_name, p("_")
+		drop query_name query_name2
+		ren query_name1 disease
+		
+	collapse (sum) pub_count, by(year disease)
+	bys year: egen all_pubs = total(pub_count)
+	gen sh_of_tot = pub_count/all_pubs * 100
+
+	if "`notQA'" == "" local journals "Top 8 Journals"
+	else local journals "All Journals"
+
+	#delimit ;
+		* Alzheimer's vs. Cancer;
+		tw (line pub_count year if disease == "Neoplasms", lc(black) lw(thin))
+		   (line pub_count year if disease == "Dementia", lc(red)),
+		 legend(order(2 "Alzhemier's & Other Dementias" 1 "Neoplasms") r(1))
+		 title("PubMed Journal Articles About Alzheimer's Relative to Neoplasms")
+		 subtitle("`journals'") yti("No. of Publications" " ") xti("");
+		 
+		graph export "../ts_alz_vs_cancer`notQA'.png", replace as(png) wid(1200) hei(700);
+		
+		* Alzheimer's vs. Total Neurological Conditions;
+		tw (line pub_count year if disease == "Neurologic", lc(black) lw(thin))
+		   (line pub_count year if disease == "Dementia", lc(red)),
+		 legend(order(2 "Alzhemier's & Other Dementias" 1 "Neurological Conditions") r(1))
+		 title("PubMed Journal Articles About Alzheimer's"
+				"Relative to All Neurological Conditions")
+		 subtitle("`journals'") yti("No. of Publications" " ") xti("");
+		 
+		graph export "../ts_alz_vs_neuro`notQA'.png", replace as(png) wid(1200) hei(700);
+
+		*Alzheimer's Share of Total Pubs;
+		tw (line sh_of_tot year if disease == "Dementia", lc(red)),
+		 legend(off) title("PubMed Journal Articles About Alzheimer's Relative to Total")
+		 subtitle("`journals'") yti("Share of Total Disease Publications (%)" " ") xti("");
+		 
+		graph export "../ts_alz_sh_of_tot`notQA'.png", replace as(png) wid(1200) hei(700);
+
+	#delimit cr
+	
+	keep if inlist(disease, "Dementia", "Neurologic")
+	keep disease year pub_count
+	reshape wide pub_count, i(year) j(disease) string
+	gen alz_sh = pub_countD / pub_countN * 100
+	
+	#delimit ;
+		* Alzheimer's Share of Total Neuro;
+		tw (line alz_sh year, lc(red)), legend(off)
+		title("PubMed Journal Articles About Alzheimer's"
+				"Relative to All Neurological Conditions")
+		subtitle("`journals'") yti("Share of Neurological Publications (%)" " ") xti("");
+		
+		graph export "../ts_alz_sh_of_neuro`notQA'.png", replace as(png) wid(1200) hei(700);
+	#delimit cr
+	
+} // end QA loop
+
+cd ../Econlit
+
+import excel "Cancer 1-500.xls", clear first
+tempfile cancer
+save `cancer', replace
+import excel "Cancer 501-1155.xls", clear first
+append using `cancer'
+save "cancer.dta", replace
+keep year
+tempfile cancer_yr
+save `cancer_yr', replace
+
+import excel "Neuro 1-173", clear first
+save "neuro.dta", replace
+keep year
+tempfile neuro_yr
+save `neuro_yr', replace
+
+import excel "Alz-Dem 1-134.xls", clear first
+save "alz_dementia.dta", replace
+	
+keep year
+gen disease = "Dementia"
+
+append using `neuro_yr'
+replace disease = "Neurologic" if disease == ""
+
+append using `cancer_yr'
+replace disease = "Neoplasms" if disease == ""
+
+destring year, replace
+gen id = _n
+collapse (count) pub_count = id, by(disease year)
+
+egen dis_id = group(disease)
+xtset dis_id year
+tsfill
+replace pub_count = 0 if pub_count == .
+bys dis_id: ereplace disease = mode(disease)
+
+#delimit ;
+		* Alzheimer's vs. Cancer;
+		tw (line pub_count year if disease == "Neoplasms", lc(black) lw(thin))
+		   (line pub_count year if disease == "Dementia", lc(red)),
+		 legend(order(2 "Alzhemier's & Other Dementias" 1 "Cancer") r(1))
+		 title("Econlit Journal Articles About Alzheimer's Relative to Cancer")
+		 yti("No. of Publications" " ") xti("");
+		 
+		graph export "../ts_econlit_alz_vs_cancer.png", replace as(png) wid(1200) hei(700);
+		
+		* Alzheimer's vs. Total Neurological Conditions;
+		tw (line pub_count year if disease == "Neurologic", lc(black) lw(thin))
+		   (line pub_count year if disease == "Dementia", lc(red)),
+		 legend(order(2 "Alzhemier's & Other Dementias" 1 "Neurological Conditions") r(1))
+		 title("Econlit Journal Articles About Alzheimer's"
+				"Relative to All Neurological Conditions")
+		 yti("No. of Publications" " ") xti("");
+		 
+		graph export "../ts_econlit_alz_vs_neuro.png", replace as(png) wid(1200) hei(700);
+#delimit cr
+
+
+*---------------------------
+} // end plots by discipline by MSA
+*---------------------------
