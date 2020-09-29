@@ -88,7 +88,7 @@ pull_affs = function(id) {
 	  url = paste0('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=',
 				id,
 			   '&retmode=xml')
-	  # &api_key=ae06e6619c472ede6b6d4ac4b5eadecdb209
+	#, '&api_key=ae06e6619c472ede6b6d4ac4b5eadecdb209')
 	  # Query PubMed and save result
 	  #xml = read_xml(curl(url, handle = curl::new_handle("useragent" = "Mozilla/5.0")))
 	  xml = read_xml(url)
@@ -128,7 +128,7 @@ pull_affs = function(id) {
 
 	output = c(date, mesh, journal, affil, pt, gr)
 
-  Sys.sleep(runif(1,0.6,1))
+  Sys.sleep(runif(1,0.5,0.7))
   }
   else {
 	output = c("NA", "NA", "NA", "NA", "NA", "NA")
@@ -149,15 +149,46 @@ query_names = queries_sub$Query_Name
 PMIDs = sapply(X = queries, FUN = pull_pmids) %>%
 	unname()
 PMIDs = as.numeric(PMIDs)
-outfile = '../Dropbox/Amitabh/PubMed/PMIDs/QA/QA_Full.csv'
-PMIDs_df = data.frame(unlist(PMIDs), rep(query_names, length(unlist(PMIDs))))
-write_csv(PMIDs_df, outfile)
+#outfile = '../Dropbox/Amitabh/PubMed/PMIDs/QA/QA_Full.csv'
+#PMIDs_df = data.frame(PMIDs, rep(query_names, length(PMIDs)))
+#write_csv(PMIDs_df, outfile)
 
 
 # (for testing purposes only) PMIDs = c(22368089, 31856095)
-PMIDs = read_csv('../Dropbox/Amitabh/PubMed/PMIDs/QA/QA_Full.csv')
-info = sapply(X = PMIDs[1:10000], FUN = pull_affs)
-master = data.frame(pmid = PMIDs[1:10000], date = info[1,], mesh = info[2,],
+#PMIDs = read_csv('../Dropbox/Amitabh/PubMed/PMIDs/QA/QA_Full.csv') %>%
+#		unname()
+#	PMIDs = PMIDs[,1]
+#	as.numeric(PMIDs)
+info = sapply(X = PMIDs[130001:135000], FUN = pull_affs)
+master = data.frame(pmid = PMIDs[130001:135000], date = info[1,], mesh = info[2,],
 				journal=info[3,], affil=info[4,], pt = info[5,], gr = info[6,])
 
-write_csv(master, path = '../Dropbox/Amitabh/PubMed/QA_Metadata/raw_1_10000.csv')
+write_csv(master, path = '../Dropbox/Amitabh/PubMed/QA_Metadata/raw_130001_135000.csv')
+
+
+### BMJ ONLY, ALL JOURNAL ARTICLES
+#list of queries (only 1 here)
+queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_bmj.txt')
+
+queries = paste0(queries_sub$Query, ' AND (1980/01/01[PDAT] : 2019/12/31[PDAT])')
+query_names = queries_sub$Query_Name
+
+#Run through scraping function to pull out PMIDs
+PMIDs = sapply(X = queries, FUN = pull_pmids) %>%
+	unname()
+PMIDs = as.numeric(PMIDs)
+#outfile = '../Dropbox/Amitabh/PubMed/PMIDs/QA/QA_Full.csv'
+#PMIDs_df = data.frame(PMIDs, rep(query_names, length(PMIDs)))
+#write_csv(PMIDs_df, outfile)
+
+
+# (for testing purposes only) PMIDs = c(22368089, 31856095)
+#PMIDs = read_csv('../Dropbox/Amitabh/PubMed/PMIDs/QA/BMJ.csv') %>%
+#		unname()
+#	PMIDs = PMIDs[,1]
+#	as.numeric(PMIDs)
+info = sapply(X = PMIDs[40001:length(PMIDs)], FUN = pull_affs)
+master = data.frame(pmid = PMIDs[40001:length(PMIDs)], date = info[1,], mesh = info[2,],
+				journal=info[3,], affil=info[4,], pt = info[5,], gr = info[6,])
+
+write_csv(master, path = '../Dropbox/Amitabh/PubMed/QA_Metadata/bmj_40001_40343.csv')
