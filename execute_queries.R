@@ -30,7 +30,7 @@ api_parse = function(query){
 start_year = 1980
 
 # set to econ or diseases:
-group_term = "drugs_devices_notQA"
+group_term = "all"
 
 years = as.character(start_year:2019)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
@@ -134,7 +134,7 @@ if (group_term == "drugs_devices_notQA") {
 				'.csv')
 }
 if (group_term == "all") {
-	outfile = paste0('Amitabh/PubMed_Search_Results_all_from',
+	outfile = paste0('../Dropbox/Amitabh/PubMed_Search_Results_all_from',
 				as.character(start_year),
 				'.csv')
 }

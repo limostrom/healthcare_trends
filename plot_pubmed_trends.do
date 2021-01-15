@@ -30,9 +30,9 @@ local pies_bydisease_sub 0
 local nih_vs_priv 0
 local drugs_and_devices 0
 local ba_tr_cl 0
-local ba_tr_cl_bydisease 0
+local ba_tr_cl_bydisease 1
 local basic_msas 0
-local alz 1
+local alz 0
 
 
 global repo "C:/Users/lmostrom/Documents/GitHub/healthcare_trends/"
@@ -2993,12 +2993,11 @@ if `ba_tr_cl_bydisease' == 1 {
 *-----------------------------
 cap cd "C:\Users\lmostrom\Dropbox\Amitabh\"
 
-*local filelist: dir "PubMed/PMIDs/PieCharts/" files "PMIDs_BTC_*.csv"
+local filelist: dir "PubMed/PMIDs/BTC/" files "PMIDs_BTC_*.csv"
 
 foreach priv in /*"notNIH"*/ "Corporation" { // misnomer - mostly Univ's & Hospitals
 	if "`priv'" == "Corporation" local _vsCorp "_vsCorp"
-foreach QA in "" "_notQA" {
-
+foreach QA in /*""*/ "_notQA" {
 	if "`QA'" == "" {
 		local yes_no "!="
 		local journals "Top 7 Journals"
@@ -3011,8 +3010,8 @@ foreach QA in "" "_notQA" {
 	local i = 1
 	foreach file of local filelist {
 	if substr("`file'", 11, 5) `yes_no' "notqa" {
-		import delimited pmid query_name using "PubMed/PMIDs/PieCharts/`file'", rowr(2:) clear
 		dis "`file'"
+		import delimited pmid query_name using "PubMed/PMIDs/BTC/`file'", rowr(2:) clear
 		if _N > 0 {
 			tostring pmid, replace
 			drop if pmid == "NA"
@@ -3032,7 +3031,7 @@ foreach QA in "" "_notQA" {
 	}
 
 	use `full_pmids', clear
-
+pause
 	gen year = substr(query_name, -4, 4)
 		destring year, replace
 	split query_name, p("_")
@@ -3040,7 +3039,10 @@ foreach QA in "" "_notQA" {
 	drop query_name query_name2
 		ren query_name1 btc
 
+	replace pmid = pmid*1000 if inlist(btc, "total", "totalCTs")
+	
 	save "PubMed/Master_dta/pmids_bas_trans_clin`QA'.dta", replace
+sdf
 /*
 foreach _wCTs in /*""*/ "_wCTs" {
 	use "PubMed/Master_dta/pmids_bas_trans_clin`QA'.dta", clear

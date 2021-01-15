@@ -1,0 +1,2 @@
+Query_Name	Query
+cns_QA	("Journal Article"[Publication Type]) AND ("Nature"[Journal] OR "Science"[Journal] OR "Cell"[Journal])

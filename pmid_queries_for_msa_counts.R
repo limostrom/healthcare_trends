@@ -92,11 +92,11 @@ else {
 }
 ## --------------------------------------------------------------------
 # Author affiliations only reliably show up from 1988 on
-years = as.character(2005:2018)
+years = as.character(1980:2018)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
 
 #list of queries to run year by year
-queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_piecharts_2005.txt')
+queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_basic_translational_1980.txt')
 queries = rep(queries_sub$Query, each=length(year_queries))
 query_names = rep(queries_sub$Query_Name, each=length(year_queries))
 
@@ -107,7 +107,7 @@ query_names = paste0(query_names, years)
 PMIDs = sapply(X = queries, FUN = pull_pmids) %>%
 	unname()
 for (i in 1:length(query_names)) {
-	outfile = paste0('Amitabh/PMIDs/PieCharts/PMIDs_2005_',
+	outfile = paste0('Amitabh/PubMed/Master_dta/pmids_bas_trans_clin_',
 				query_names[i],
 				'.csv')
 	subset = data.frame(unlist(PMIDs[i]), rep(query_names[i], length(unlist(PMIDs[i]))))

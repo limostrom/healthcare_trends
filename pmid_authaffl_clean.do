@@ -13,14 +13,14 @@ local affls_append 0
 local hs_affls_append 0
 local ct_affls_append 0
 
-local pmids_append_master 1
+local pmids_append_master 0
 
-local affls_clean 0
-	local ext "_master" // set to "" for lifesci, "_hs" for health services, "_ct" for clinical trials
+local affls_clean 1
+	local ext "" // set to "" for lifesci, "_hs" for health services, "_ct" for clinical trials
 local full_save 0
 local full_save_2005 0
 
-cap cd "C:\Users\lmostrom\Documents\Amitabh\"
+cap cd "C:\Users\lmostrom\Dropbox\Amitabh\PubMed"
 global repo "C:/Users/lmostrom/Documents/GitHub/healthcare_trends/"
 
 *================================================================================

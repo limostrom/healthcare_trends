@@ -24,7 +24,8 @@ pull_pmids = function(query){
                 i,
 		            '&term=',
 		            search,
-                '&tool=my_tool&email=my_email@example.com'
+                '&tool=my_tool&email=my_email@example.com',
+		    '&api_key=ae06e6619c472ede6b6d4ac4b5eadecdb209'
   )
 
   # Query PubMed and save result
@@ -40,7 +41,7 @@ print(N)
     xml_node('IdList')
   pmid_list = str_extract_all(pmid_list,"\\(?[0-9]+\\)?")[[1]]
 	
-  Sys.sleep(0.3)
+  Sys.sleep(0.5)
 
   i = 5000
   while (i < N) {
@@ -49,7 +50,9 @@ print(N)
                 i,
                 '&term=',
                 search,
-                '&tool=my_tool&email=my_email@example.com')
+                '&tool=my_tool&email=my_email@example.com',
+		    '&api_key=ae06e6619c472ede6b6d4ac4b5eadecdb209'
+)
 
     # Query PubMed and save result
     xml = read_xml(url)
@@ -63,7 +66,8 @@ print(N)
 
     pmid_list = append(pmid_list, new_ids)
 
-    Sys.sleep(runif(1,0.6,1))
+    Sys.sleep(0.5)
+    #Sys.sleep(runif(1,1,1.2))
   }
 
   
@@ -142,7 +146,7 @@ years = as.character(1980:2019)
 year_queries = paste0('(',years,'/01/01[PDAT] : ',years,'/12/31[PDAT])')
 
 #list of queries to run year by year
-queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_all_1980.txt')
+queries_sub = read_tsv(file = 'GitHub/healthcare_trends/search_terms_cell_nat_sci.txt')
 	
 queries = rep(queries_sub$Query, each=length(year_queries))
 query_names = rep(queries_sub$Query_Name, each=length(year_queries))
@@ -152,7 +156,7 @@ queries = paste0(year_queries, ' AND ', queries)
 query_names = paste0(query_names, years)
 
 #Run through scraping function to pull out PMIDs
-PMIDs = sapply(X = queries, FUN = pull_pmids) %>%
+PMIDs = sapply(X = queries[321], FUN = pull_pmids) %>%
 	unname()
 for (i in 1:length(query_names)) {
 	outfile = paste0('../Dropbox/Amitabh/PubMed/PMIDs/QA/PMIDs_all_',
